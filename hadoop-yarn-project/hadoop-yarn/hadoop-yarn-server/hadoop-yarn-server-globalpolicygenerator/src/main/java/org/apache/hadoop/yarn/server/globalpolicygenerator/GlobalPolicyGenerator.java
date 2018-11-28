@@ -26,12 +26,14 @@ import org.apache.commons.lang.time.DurationFormatUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.metrics2.lib.DefaultMetricsSystem;
 import org.apache.hadoop.service.CompositeService;
+import org.apache.hadoop.util.JvmPauseMonitor;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.YarnUncaughtExceptionHandler;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.server.federation.utils.FederationStateStoreFacade;
 import org.apache.hadoop.yarn.server.globalpolicygenerator.subclustercleaner.SubClusterCleaner;
+import org.apache.hadoop.yarn.webapp.WebApp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +57,7 @@ public class GlobalPolicyGenerator extends CompositeService {
   public static final int SHUTDOWN_HOOK_PRIORITY = 30;
   private AtomicBoolean isStopping = new AtomicBoolean(false);
   private static final String METRICS_NAME = "Global Policy Generator";
+  private static long gpgStartupTime = System.currentTimeMillis();
 
   // Federation Variables
   private GPGContext gpgContext;
@@ -62,6 +65,10 @@ public class GlobalPolicyGenerator extends CompositeService {
   // Scheduler service that runs tasks periodically
   private ScheduledThreadPoolExecutor scheduledExecutorService;
   private SubClusterCleaner subClusterCleaner;
+
+  private String webAppAddress;
+  private JvmPauseMonitor pauseMonitor;
+  private WebApp webApp;
 
   public GlobalPolicyGenerator() {
     super(GlobalPolicyGenerator.class.getName());
