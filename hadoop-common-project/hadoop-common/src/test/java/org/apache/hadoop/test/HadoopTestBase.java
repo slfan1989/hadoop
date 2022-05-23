@@ -108,6 +108,15 @@ public abstract class HadoopTestBase extends Assert {
     Thread.currentThread().setName("JUnit-" + getMethodName());
   }
 
+  /**
+   * Override assertThat introduced by extending JUnit Assertions in base test class.
+   * If extending Assertions is removed, we can eliminate this method and import directly.
+   *
+   * @param actual the computed value being compared.
+   * @param matcher an expression, built of Matchers, specifying allowed values.
+   * @param <T> the static type accepted by the matcher
+   * (this can flag obvious compile-time problems such as assertThat(1, is("a"))
+   */
   public static <T> void assertThat(T actual, Matcher<? super T> matcher) {
     MatcherAssert.assertThat("", actual, matcher);
   }
