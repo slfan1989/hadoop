@@ -49,7 +49,7 @@ import java.lang.reflect.Field;
  * since the class was removed in Mockito 2.1. Using this class is a bad
  * practice. Consider refactoring instead of using this.
  */
-@Deprecated
+
 public abstract class Whitebox {
   /**
    * Get the field of the target object.
