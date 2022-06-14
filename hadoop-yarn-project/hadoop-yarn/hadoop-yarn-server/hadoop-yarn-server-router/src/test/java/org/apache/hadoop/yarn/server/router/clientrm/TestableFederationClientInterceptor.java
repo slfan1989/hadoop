@@ -31,10 +31,7 @@ import org.apache.hadoop.yarn.api.protocolrecords.SubmitApplicationRequest;
 import org.apache.hadoop.yarn.api.protocolrecords.SubmitApplicationResponse;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.server.federation.store.records.SubClusterId;
-import org.apache.hadoop.yarn.server.resourcemanager.ClientRMService;
-import org.apache.hadoop.yarn.server.resourcemanager.MockRM;
-import org.apache.hadoop.yarn.server.resourcemanager.RMAppManager;
-import org.apache.hadoop.yarn.server.resourcemanager.RMContext;
+import org.apache.hadoop.yarn.server.resourcemanager.*;
 import org.apache.hadoop.yarn.server.resourcemanager.scheduler.YarnScheduler;
 import org.apache.hadoop.yarn.server.resourcemanager.security.QueueACLsManager;
 import org.apache.hadoop.yarn.server.resourcemanager.security.RMDelegationTokenSecretManager;
@@ -50,6 +47,9 @@ public class TestableFederationClientInterceptor
 
   private ConcurrentHashMap<SubClusterId, MockRM> mockRMs =
       new ConcurrentHashMap<>();
+
+  private ConcurrentHashMap<SubClusterId, MockNM> mockNMs =
+          new ConcurrentHashMap<>();
 
   private List<SubClusterId> badSubCluster = new ArrayList<SubClusterId>();
 
@@ -71,7 +71,8 @@ public class TestableFederationClientInterceptor
         mockRM.init(super.getConf());
         mockRM.start();
         try {
-          mockRM.registerNode("h1:1234", 1024);
+          MockNM nm = mockRM.registerNode("127.0.0.1:1234", 8*1024, 4);
+          mockNMs.put(subClusterId, nm);
         } catch (Exception e) {
           Assert.fail(e.getMessage());
         }
@@ -115,4 +116,11 @@ public class TestableFederationClientInterceptor
     }
   }
 
+  public ConcurrentHashMap<SubClusterId, MockRM> getMockRMs() {
+    return mockRMs;
+  }
+
+  public ConcurrentHashMap<SubClusterId, MockNM> getMockNMs() {
+    return mockNMs;
+  }
 }

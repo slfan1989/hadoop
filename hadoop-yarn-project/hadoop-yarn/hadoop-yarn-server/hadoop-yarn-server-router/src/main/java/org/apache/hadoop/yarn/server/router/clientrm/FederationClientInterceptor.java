@@ -31,7 +31,6 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -159,7 +158,7 @@ public class FederationClientInterceptor
       LoggerFactory.getLogger(FederationClientInterceptor.class);
 
   private int numSubmitRetries;
-  private Map<SubClusterId, ApplicationClientProtocol> clientRMProxies;
+
   private FederationStateStoreFacade federationFacade;
   private Random rand;
   private RouterPolicyFacade policyFacade;
@@ -199,8 +198,6 @@ public class FederationClientInterceptor
         conf.getInt(YarnConfiguration.ROUTER_CLIENTRM_SUBMIT_RETRY,
             YarnConfiguration.DEFAULT_ROUTER_CLIENTRM_SUBMIT_RETRY);
 
-    clientRMProxies =
-        new ConcurrentHashMap<SubClusterId, ApplicationClientProtocol>();
     routerMetrics = RouterMetrics.getMetrics();
 
     returnPartialReport = conf.getBoolean(
@@ -220,10 +217,6 @@ public class FederationClientInterceptor
   protected ApplicationClientProtocol getClientRMProxyForSubCluster(
       SubClusterId subClusterId) throws YarnException {
 
-    if (clientRMProxies.containsKey(subClusterId)) {
-      return clientRMProxies.get(subClusterId);
-    }
-
     ApplicationClientProtocol clientRMProxy = null;
     try {
       boolean serviceAuthEnabled = getConf().getBoolean(
@@ -242,7 +235,6 @@ public class FederationClientInterceptor
           e);
     }
 
-    clientRMProxies.put(subClusterId, clientRMProxy);
     return clientRMProxy;
   }
 
@@ -287,10 +279,8 @@ public class FederationClientInterceptor
 
     for (int i = 0; i < numSubmitRetries; ++i) {
       SubClusterId subClusterId = getRandomActiveSubCluster(subClustersActive);
-      LOG.debug(
-          "getNewApplication try #{} on SubCluster {}", i, subClusterId);
-      ApplicationClientProtocol clientRMProxy =
-          getClientRMProxyForSubCluster(subClusterId);
+      LOG.debug("getNewApplication try #{} on SubCluster {}", i, subClusterId);
+      ApplicationClientProtocol clientRMProxy = getClientRMProxyForSubCluster(subClusterId);
       GetNewApplicationResponse response = null;
       try {
         response = clientRMProxy.getNewApplication(request);
@@ -300,7 +290,6 @@ public class FederationClientInterceptor
       }
 
       if (response != null) {
-
         long stopTime = clock.getTime();
         routerMetrics.succeededAppsCreated(stopTime - startTime);
         RouterAuditLogger.logSuccess(user.getShortUserName(),
@@ -312,7 +301,6 @@ public class FederationClientInterceptor
         // Blacklist this subcluster for this request.
         subClustersActive.remove(subClusterId);
       }
-
     }
 
     routerMetrics.incrAppsFailedCreated();
@@ -822,7 +810,29 @@ public class FederationClientInterceptor
   @Override
   public GetQueueInfoResponse getQueueInfo(GetQueueInfoRequest request)
       throws YarnException, IOException {
-    throw new NotImplementedException("Code is not implemented");
+    // request.getQueueName()
+
+    if(request == null){
+      routerMetrics.incrQueueUserAclsFailedRetrieved();
+      RouterServerUtil.logAndThrowException("Missing getQueueUserAcls request.", null);
+    }
+    long startTime = clock.getTime();
+    ClientMethod remoteMethod = new ClientMethod("getQueueInfo",
+            new Class[] {GetQueueUserAclsInfoRequest.class}, new Object[] {request});
+    Collection<GetQueueInfoResponse> queues;
+    try {
+      queues = invokeAppClientProtocolMethod(true, remoteMethod,
+              GetQueueInfoResponse.class);
+    } catch (Exception ex) {
+      routerMetrics.incrQueueUserAclsFailedRetrieved();
+      LOG.error("Unable to get queue to exception.", ex);
+      throw ex;
+    }
+    long stopTime = clock.getTime();
+    routerMetrics.succeededGetQueueUserAclsRetrieved(stopTime - startTime);
+    // Merge the QueueUserAclsInfoResponse
+    //return RouterYarnClientUtils.mergeQueueUserAcls(queueUserAcls);
+    return null;
   }
 
   @Override
@@ -854,7 +864,22 @@ public class FederationClientInterceptor
   public MoveApplicationAcrossQueuesResponse moveApplicationAcrossQueues(
       MoveApplicationAcrossQueuesRequest request)
       throws YarnException, IOException {
-    throw new NotImplementedException("Code is not implemented");
+    /*if (request != null && request.getApplicationId() != null && request.getTargetQueue() != null) {
+      return null;
+    }*/
+
+    SubClusterId subClusterId = null;
+
+    try {
+      subClusterId = federationFacade
+          .getApplicationHomeSubCluster(request.getApplicationId());
+    } catch (YarnException e) {
+      // routerMetrics.incrAppsFailedRetrieved();
+    }
+
+    ApplicationClientProtocol clientRMProxy =
+            getClientRMProxyForSubCluster(subClusterId);
+    return clientRMProxy.moveApplicationAcrossQueues(request);
   }
 
   @Override
