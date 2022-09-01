@@ -98,6 +98,10 @@ public class FederationStateStoreService extends AbstractService
   private long heartbeatInterval;
   private long heartbeatInitialDelay;
   private RMContext rmContext;
+  private long cleanupInterval;
+  private long cleanupInitialDelay;
+  private FederationApplicationCleaner applicationCleaner;
+  private ScheduledExecutorService cleanUpExecutorService;
 
   public FederationStateStoreService(RMContext rmContext) {
     super(FederationStateStoreService.class.getName());
@@ -154,6 +158,8 @@ public class FederationStateStoreService extends AbstractService
   protected void serviceStart() throws Exception {
 
     registerAndInitializeHeartbeat();
+
+    initializeApplicationCleaner();
 
     super.serviceStart();
   }
@@ -224,6 +230,17 @@ public class FederationStateStoreService extends AbstractService
         heartbeatInitialDelay, heartbeatInterval, TimeUnit.SECONDS);
     LOG.info("Started federation membership heartbeat with interval: {} and initial delay: {}",
         heartbeatInterval, heartbeatInitialDelay);
+  }
+
+  private void initializeApplicationCleaner() {
+    applicationCleaner =
+        new FederationApplicationCleaner(subClusterId, stateStoreClient, rmContext);
+    scheduledExecutorService =
+        HadoopExecutors.newSingleThreadScheduledExecutor();
+    cleanUpExecutorService.scheduleWithFixedDelay(applicationCleaner,
+        cleanupInitialDelay, cleanupInterval, TimeUnit.SECONDS);
+    LOG.info("Started federation application cleaner with interval: {} and initial delay: {}",
+        cleanupInterval, cleanupInitialDelay);
   }
 
   @VisibleForTesting

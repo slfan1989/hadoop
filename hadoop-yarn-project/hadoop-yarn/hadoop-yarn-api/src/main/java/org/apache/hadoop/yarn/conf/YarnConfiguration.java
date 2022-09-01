@@ -3939,6 +3939,20 @@ public class YarnConfiguration extends Configuration {
       DEFAULT_FEDERATION_STATESTORE_HEARTBEAT_INTERVAL_SECS =
       5 * 60;
 
+  // Clean up the delay time of the first execution of the app thread pool
+  public static final String FEDERATION_CLEANUP_FINISH_APPS_INITIAL_DELAY =
+      FEDERATION_PREFIX + "cleanup-finish-apps.initial-delay";
+  // 2 minutes
+  public static final int
+      DEFAULT_FEDERATION_CLEANUP_FINISH_APPS_INITIAL_DELAY_SECS = 2 * 60;
+
+  // Interval between clean tasks 2 times
+  public static final String FEDERATION_CLEANUP_FINISH_APPS_INTERVAL =
+      FEDERATION_PREFIX + "cleanup-finish-apps.interval";
+  // 10 minutes
+  public static final int
+      DEFAULT_FEDERATION_CLEANUP_FINISH_APPS_INTERVAL_SECS = 10 * 60;
+
   public static final String FEDERATION_MACHINE_LIST =
       FEDERATION_PREFIX + "machine-list";
 
