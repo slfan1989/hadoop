@@ -62,10 +62,9 @@ class FederationBlock extends HtmlBlock {
   public void render(Block html) {
     Configuration conf = this.router.getConfig();
     boolean isEnabled = conf.getBoolean(
-        YarnConfiguration.FEDERATION_ENABLED,
-        YarnConfiguration.DEFAULT_FEDERATION_ENABLED);
+        YarnConfiguration.FEDERATION_ENABLED, YarnConfiguration.DEFAULT_FEDERATION_ENABLED);
     if (isEnabled) {
-      setTitle("About The Federation");
+      setTitle("About The Federation2");
 
       // Table header
       TBODY<TABLE<Hamlet>> tbody = html.table("#rms").thead().tr()

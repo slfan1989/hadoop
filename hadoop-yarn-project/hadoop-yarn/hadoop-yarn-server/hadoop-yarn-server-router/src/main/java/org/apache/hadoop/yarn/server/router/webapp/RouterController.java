@@ -44,7 +44,7 @@ public class RouterController extends Controller {
   }
 
   public void federation() {
-    setTitle("About the Federation");
+    // setTitle("About the Federation1");
     render(FederationPage.class);
   }
 
