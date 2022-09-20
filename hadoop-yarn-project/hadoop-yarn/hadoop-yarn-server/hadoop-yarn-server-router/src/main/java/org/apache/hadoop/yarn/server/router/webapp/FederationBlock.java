@@ -31,9 +31,11 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.server.federation.store.records.SubClusterId;
 import org.apache.hadoop.yarn.server.federation.store.records.SubClusterInfo;
+import org.apache.hadoop.yarn.server.federation.store.records.SubClusterState;
 import org.apache.hadoop.yarn.server.federation.utils.FederationStateStoreFacade;
 import org.apache.hadoop.yarn.server.resourcemanager.webapp.dao.ClusterMetricsInfo;
 import org.apache.hadoop.yarn.server.router.Router;
+import org.apache.hadoop.yarn.util.MonotonicClock;
 import org.apache.hadoop.yarn.webapp.hamlet2.Hamlet;
 import org.apache.hadoop.yarn.webapp.hamlet2.Hamlet.TABLE;
 import org.apache.hadoop.yarn.webapp.hamlet2.Hamlet.TBODY;
@@ -63,12 +65,17 @@ class FederationBlock extends HtmlBlock {
         YarnConfiguration.FEDERATION_ENABLED,
         YarnConfiguration.DEFAULT_FEDERATION_ENABLED);
     if (isEnabled) {
-      setTitle("Federation");
+      setTitle("About The Federation");
 
       // Table header
       TBODY<TABLE<Hamlet>> tbody = html.table("#rms").thead().tr()
           .th(".id", "SubCluster")
-          .th(".submittedA", "Applications Submitted*")
+          .th(".webAppAddress","webAppAddress")
+          .th(".state","state")
+          .th(".LastStartTime","LastStartTime")
+          .th(".LastHeartBeat","LastHeartBeat")
+          .th(".Capability","Capability")
+          /*.th(".submittedA", "Applications Submitted*")
           .th(".pendingA", "Applications Pending*")
           .th(".runningA", "Applications Running*")
           .th(".failedA", "Applications Failed*")
@@ -90,7 +97,7 @@ class FederationBlock extends HtmlBlock {
           .th(".availableN", "Available Nodes")
           .th(".unhealtyN", "Unhealthy Nodes")
           .th(".rebootedN", "Rebooted Nodes")
-          .th(".totalN", "Total Nodes")
+          .th(".totalN", "Total Nodes")*/
           .__().__().tbody();
 
       try {
@@ -100,6 +107,20 @@ class FederationBlock extends HtmlBlock {
         Map<SubClusterId, SubClusterInfo> subClustersInfo =
             facade.getSubClusters(true);
 
+        // Mock数据
+        SubClusterId subClusterIdxx = SubClusterId.newInstance("SC-1");
+
+        String amRMAddressxx = "5.6.7.8:5";
+        String clientRMAddressxx = "5.6.7.8:6";
+        String rmAdminAddressxx = "5.6.7.8:7";
+        String webAppAddressxx = "5.6.7.8:8";
+
+        SubClusterInfo subClusterInfoxx = SubClusterInfo.newInstance(subClusterIdxx,
+                amRMAddressxx, clientRMAddressxx, rmAdminAddressxx, webAppAddressxx,
+                SubClusterState.SC_RUNNING, new MonotonicClock().getTime(),
+                "<400 Core,500 TB Mem>");
+
+        subClustersInfo.put(subClusterIdxx,subClusterInfoxx);
         // Sort the SubClusters
         List<SubClusterInfo> subclusters = new ArrayList<>();
         subclusters.addAll(subClustersInfo.values());
@@ -120,7 +141,12 @@ class FederationBlock extends HtmlBlock {
 
           // Building row per SubCluster
           tbody.tr().td().a("//" + webAppAddress, subClusterId.toString()).__()
-              .td(Integer.toString(subClusterInfo.getAppsSubmitted()))
+                  .td(subcluster.getRMWebServiceAddress())
+                  .td(subcluster.getState().name())
+                  .td(String.valueOf(subcluster.getLastStartTime()))
+                  .td(String.valueOf(subcluster.getLastHeartBeat()))
+                  .td(subcluster.getCapability())
+              /*.td(Integer.toString(subClusterInfo.getAppsSubmitted()))
               .td(Integer.toString(subClusterInfo.getAppsPending()))
               .td(Integer.toString(subClusterInfo.getAppsRunning()))
               .td(Integer.toString(subClusterInfo.getAppsFailed()))
@@ -146,7 +172,8 @@ class FederationBlock extends HtmlBlock {
               .td(Integer.toString(subClusterInfo.getDecommissionedNodes()))
               .td(Integer.toString(subClusterInfo.getUnhealthyNodes()))
               .td(Integer.toString(subClusterInfo.getRebootedNodes()))
-              .td(Integer.toString(subClusterInfo.getTotalNodes())).__();
+              .td(Integer.toString(subClusterInfo.getTotalNodes()))*/
+                  .__();
         }
       } catch (YarnException e) {
         LOG.error("Cannot render ResourceManager", e);

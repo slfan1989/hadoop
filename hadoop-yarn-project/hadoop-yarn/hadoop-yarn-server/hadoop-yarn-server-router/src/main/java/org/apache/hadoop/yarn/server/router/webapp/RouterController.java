@@ -34,7 +34,7 @@ public class RouterController extends Controller {
 
   @Override
   public void index() {
-    setTitle("Router");
+    setTitle("About the Router");
     render(AboutPage.class);
   }
 
@@ -44,7 +44,7 @@ public class RouterController extends Controller {
   }
 
   public void federation() {
-    setTitle("Federation");
+    setTitle("About the Federation");
     render(FederationPage.class);
   }
 

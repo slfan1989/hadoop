@@ -39,4 +39,12 @@
     <name>yarn.resourcemanager.resource-profiles.source-file</name>
     <value>profiles/sample-profiles-1.json</value>
   </property>
+  <property>
+    <name>yarn.federation.enabled</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.cluster-id</name>
+    <value>sc-1</value>
+  </property>
 </configuration>
