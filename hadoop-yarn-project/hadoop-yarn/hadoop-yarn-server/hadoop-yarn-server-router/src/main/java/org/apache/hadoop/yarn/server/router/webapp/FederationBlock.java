@@ -18,13 +18,13 @@
 
 package org.apache.hadoop.yarn.server.router.webapp;
 
+import java.io.File;
+import java.io.IOException;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
@@ -46,6 +46,7 @@ import com.google.inject.Inject;
 import com.sun.jersey.api.json.JSONConfiguration;
 import com.sun.jersey.api.json.JSONJAXBContext;
 import com.sun.jersey.api.json.JSONUnmarshaller;
+import org.terracotta.statistics.Time;
 
 class FederationBlock extends HtmlBlock {
 
@@ -65,25 +66,23 @@ class FederationBlock extends HtmlBlock {
             __("$(document).ready(function() {" +
                     " var table = $('#rms').DataTable();" +
                     " $('#rms tbody').on('click', 'td.details-control', function () {" +
-                    "    var tr = $(this).closest('tr');  var row = table.row( tr ); row.child('<table><tr><td>123</td><td>456</td><td>789</td></tr></table>').show(); });  });").__();
+                    " var tr = $(this).closest('tr');  " +
+                    " var row = table.row( tr ); " +
+                    " row.child('<table><tr><td>123</td><td>456</td><td>789</td></tr></table>').show(); });  });").__();
     Configuration conf = this.router.getConfig();
     boolean isEnabled = conf.getBoolean(
             YarnConfiguration.FEDERATION_ENABLED,
             YarnConfiguration.DEFAULT_FEDERATION_ENABLED);
     if (!isEnabled) {
 
-      String msg = "<table cellpadding='5' cellspacing='0' border='0' style='padding-left:50px;'>" +
-              "<tr><td>zheshiyigeceshi<td></tr></table>";
-
-
       // Table header
       TBODY<TABLE<Hamlet>> tbody = html.table("#rms").thead().tr()
               .th(".id", "SubCluster")
-              //.th(".submittedA", "Applications Submitted*")
-              //.th(".pendingA", "Applications Pending*")
-              //.th(".runningA", "Applications Running*")
-              //.th(".failedA", "Applications Failed*")
-              //.th(".killedA", "Applications Killed*")
+              .th(".state", "SubCluster State")
+              .th(".lastStartTime", "LastStartTime")
+              .th(".lastHeartBeat", "LastHeartBeat")
+              .th(".failedA", "Applications Failed*")
+              .th(".killedA", "Applications Killed*")
               .__().__().tbody();
 
       try {
@@ -91,17 +90,21 @@ class FederationBlock extends HtmlBlock {
         FederationStateStoreFacade facade =
                 FederationStateStoreFacade.getInstance();
 
-        String amRMAddressxx = "5.6.7.8:5";
-        String clientRMAddressxx = "5.6.7.8:6";
-        String rmAdminAddressxx = "5.6.7.8:7";
-        String webAppAddressxx = "5.6.7.8:8";
+        String sc1AmRMAddress = "5.6.7.8:5";
+        String sc1ClientRMAddress = "5.6.7.8:6";
+        String sc1RmAdminAddress = "5.6.7.8:7";
+        String sc1WebAppAddress = "0.0.0.0:8080";
 
-        SubClusterInfo subClusterInfoxx = SubClusterInfo.newInstance(SubClusterId.newInstance("sc-1"),
-                amRMAddressxx, clientRMAddressxx, rmAdminAddressxx, webAppAddressxx,
-                SubClusterState.SC_RUNNING, new MonotonicClock().getTime(),
-                "capability");
-        facade.getStateStore().registerSubCluster(
-                SubClusterRegisterRequest.newInstance(subClusterInfoxx));
+
+        String json = FileUtils.readFileToString(new File("/Users/fanshilun/Documents/code-v3/hadoop/hadoop-yarn-project/hadoop-yarn/hadoop-yarn-server/hadoop-yarn-server-router/target/json"));
+        SubClusterInfo sc1 =
+            SubClusterInfo.newInstance(SubClusterId.newInstance("SC-1"),
+            sc1AmRMAddress, sc1ClientRMAddress, sc1RmAdminAddress, sc1WebAppAddress,
+            SubClusterState.SC_RUNNING, new Date().getTime(), json);
+        Thread.sleep(1000);
+        sc1.setLastHeartBeat(new Date().getTime());
+
+        facade.getStateStore().registerSubCluster(SubClusterRegisterRequest.newInstance(sc1));
 
         Map<SubClusterId, SubClusterInfo> subClustersInfo =
                 facade.getSubClusters(true);
@@ -124,18 +127,20 @@ class FederationBlock extends HtmlBlock {
           String capability = subcluster.getCapability();
           ClusterMetricsInfo subClusterInfo = getClusterMetricsInfo(capability);
 
+
+
           // Building row per SubCluster
           // $class("details-control")
           // .$onclick("tdclick()")
           tbody.tr().td().$class("details-control").__(subClusterId.toString()).__()
-                  //  .td(Integer.toString(subClusterInfo.getAppsSubmitted()))
-                  //  .td(Integer.toString(subClusterInfo.getAppsPending()))
-                  //  .td(Integer.toString(subClusterInfo.getAppsRunning()))
-                  //  .td(Integer.toString(subClusterInfo.getAppsFailed()))
-                  //  .td(Integer.toString(subClusterInfo.getAppsKilled()))
+                  .td(subcluster.getState().name())
+                  .td(DateFormatUtils.format(subcluster.getLastStartTime(),"yyyy-MM-dd HH:mm:ss"))
+                  .td(DateFormatUtils.format(subcluster.getLastHeartBeat(),"yyyy-MM-dd HH:mm:ss"))
+                  .td(Integer.toString(subClusterInfo.getAppsFailed()))
+                  .td(Integer.toString(subClusterInfo.getAppsKilled()))
           .__();
         }
-      } catch (YarnException e) {
+      } catch (YarnException | IOException | InterruptedException e) {
         LOG.error("Cannot render ResourceManager", e);
       }
 
