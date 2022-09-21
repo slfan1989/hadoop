@@ -64,11 +64,52 @@ class FederationBlock extends HtmlBlock {
   public void render(Block html) {
     html.script().$type("text/javascript").
             __("$(document).ready(function() {" +
-                    " var table = $('#rms').DataTable();" +
-                    " $('#rms tbody').on('click', 'td.details-control', function () {" +
-                    " var tr = $(this).closest('tr');  " +
-                    " var row = table.row( tr ); " +
-                    " row.child('<table><tr><td>appsSubmitted:0<p>appsCompleted:0,appsPending:0,appsRunning:0,appsFailed:0,appsKilled:0</td><td>appsSubmitted:0,appsCompleted:0,appsPending:0,appsRunning:0,appsFailed:0,appsKilled:0</td><td>appsSubmitted:0,appsCompleted:0,appsPending:0,appsRunning:0,appsFailed:0,appsKilled:0</td></tr></table>').show(); });  });").__();
+                    " var table = $('#rms').DataTable(); \n" +
+                    " $('#rms tbody').on('click', 'td.details-control', function () { \n" +
+                    " var tr = $(this).closest('tr');  \n" +
+                    " var row = table.row( tr ); \n" +
+                    " console.log(row) \n" +
+                    " row.child('" +
+                    "     <table>" +
+                    "          <tr>" +
+                    "              <td>" +
+                    "                  <h3>Application Metrics</h3>" +
+                    "                  appsSubmitted : 0 </p>" +
+                    "                  appsCompleted : 0 </p>" +
+                    "                  appsPending   : 0 </p>" +
+                    "                  appsRunning   : 0 </p>" +
+                    "                  appsFailed    : 0 </p> " +
+                    "                  appsKilled    : 0 </p>" +
+                    "              </td>" +
+                    "              <td>" +
+                    "                 <h3>Resource Metrics</h3>" +
+                    "                 reservedMB     : 0    </p>" +
+                    "                 availableMB    : 4096 </p>" +
+                    "                 allocatedMB    : 0    </p>" +
+                    "                 pendingMB      : 0    </p>" +
+                    "                 reservedVirtualCores  :  0 </p>" +
+                    "                 availableVirtualCores :  4 </p>" +
+                    "                 allocatedVirtualCores :  0 </p>" +
+                    "                 pendingVirtualCores   :  0 </p>" +
+                    "                 containersAllocated   :  0 </p>" +
+                    "                 containersReserved    :  0 </p>" +
+                    "                 containersPending     :  0 </p>" +
+                    "                           totalMB     :  4096 </p>" +
+                    "                    totalVirtualCores  :  4    </p>" +
+                    "             </td>" +
+                    "             <td>" +
+                    "                <h3>Node Metrics</h3>" +
+                    "                totalNodes : 1 </p>" +
+                    "                lostNodes  : 0 </p>" +
+                    "                unhealthyNodes : 0 </p>" +
+                    "                decommissioningNodes : 0 </p>" +
+                    "                decommissionedNodes :  0 </p>" +
+                    "                rebootedNodes : 0 </p>" +
+                    "                activeNodes : 1 </p>" +
+                    "                shutdownNodes : 0 " +
+                    "             </td>" +
+                    "          </tr>" +
+                    "     </table>').show(); \n }); });").__();
     Configuration conf = this.router.getConfig();
     boolean isEnabled = conf.getBoolean(
             YarnConfiguration.FEDERATION_ENABLED,
@@ -76,13 +117,13 @@ class FederationBlock extends HtmlBlock {
     if (!isEnabled) {
 
       // Table header
-      TBODY<TABLE<Hamlet>> tbody = html.table("#rms").$class("display").thead().tr()
+      TBODY<TABLE<Hamlet>> tbody = html.table("#rms").$class("cell-border").$style("width:100%").thead().tr()
               .th(".id", "SubCluster")
               .th(".state", "State")
               .th(".lastStartTime", "LastStartTime")
               .th(".lastHeartBeat", "LastHeartBeat")
               .th(".resource", "Resource")
-              .th(".killedA", "Applications Killed*")
+              .th(".nodes", "Nodes")
               .__().__().tbody();
 
       try {
@@ -141,12 +182,12 @@ class FederationBlock extends HtmlBlock {
           // $class("details-control")
           // .$onclick("tdclick()")
 
-          tbody.tr().td().$class("details-control").__(subClusterId.toString()).__()
+          tbody.tr().$id(subClusterId.toString()).td().$class(" details-control").__(subClusterId.toString()).__()
                   .td(subcluster.getState().name())
                   .td(DateFormatUtils.format(subcluster.getLastStartTime(),"yyyy-MM-dd HH:mm:ss"))
                   .td(DateFormatUtils.format(subcluster.getLastHeartBeat(),"yyyy-MM-dd HH:mm:ss"))
                   .td("<Memory:"+subClusterInfo.getTotalMB()+" MB, VCore:"+subClusterInfo.getTotalVirtualCores()+">")
-                  .td(Integer.toString(subClusterInfo.getAppsKilled()))
+                  .td("<Total:"+subClusterInfo.getTotalNodes()+", Active:"+subClusterInfo.getActiveNodes()+">")
           .__();
         }
       } catch (YarnException | IOException | InterruptedException e) {
