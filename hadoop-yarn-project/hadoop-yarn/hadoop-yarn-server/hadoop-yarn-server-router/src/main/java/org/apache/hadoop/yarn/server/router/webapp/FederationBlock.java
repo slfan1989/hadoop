@@ -68,7 +68,7 @@ class FederationBlock extends HtmlBlock {
                     " $('#rms tbody').on('click', 'td.details-control', function () {" +
                     " var tr = $(this).closest('tr');  " +
                     " var row = table.row( tr ); " +
-                    " row.child('<table><tr><td>123</td><td>456</td><td>789</td></tr></table>').show(); });  });").__();
+                    " row.child('<table><tr><td>appsSubmitted:0<p>appsCompleted:0,appsPending:0,appsRunning:0,appsFailed:0,appsKilled:0</td><td>appsSubmitted:0,appsCompleted:0,appsPending:0,appsRunning:0,appsFailed:0,appsKilled:0</td><td>appsSubmitted:0,appsCompleted:0,appsPending:0,appsRunning:0,appsFailed:0,appsKilled:0</td></tr></table>').show(); });  });").__();
     Configuration conf = this.router.getConfig();
     boolean isEnabled = conf.getBoolean(
             YarnConfiguration.FEDERATION_ENABLED,
@@ -76,12 +76,12 @@ class FederationBlock extends HtmlBlock {
     if (!isEnabled) {
 
       // Table header
-      TBODY<TABLE<Hamlet>> tbody = html.table("#rms").thead().tr()
+      TBODY<TABLE<Hamlet>> tbody = html.table("#rms").$class("display").thead().tr()
               .th(".id", "SubCluster")
-              .th(".state", "SubCluster State")
+              .th(".state", "State")
               .th(".lastStartTime", "LastStartTime")
               .th(".lastHeartBeat", "LastHeartBeat")
-              .th(".failedA", "Applications Failed*")
+              .th(".resource", "Resource")
               .th(".killedA", "Applications Killed*")
               .__().__().tbody();
 
@@ -104,7 +104,15 @@ class FederationBlock extends HtmlBlock {
         Thread.sleep(1000);
         sc1.setLastHeartBeat(new Date().getTime());
 
+        SubClusterInfo sc2 =
+                SubClusterInfo.newInstance(SubClusterId.newInstance("SC-2"),
+                        sc1AmRMAddress, sc1ClientRMAddress, sc1RmAdminAddress, sc1WebAppAddress,
+                        SubClusterState.SC_RUNNING, new Date().getTime(), json);
+        Thread.sleep(1000);
+        sc2.setLastHeartBeat(new Date().getTime());
+
         facade.getStateStore().registerSubCluster(SubClusterRegisterRequest.newInstance(sc1));
+        facade.getStateStore().registerSubCluster(SubClusterRegisterRequest.newInstance(sc2));
 
         Map<SubClusterId, SubClusterInfo> subClustersInfo =
                 facade.getSubClusters(true);
@@ -132,11 +140,12 @@ class FederationBlock extends HtmlBlock {
           // Building row per SubCluster
           // $class("details-control")
           // .$onclick("tdclick()")
+
           tbody.tr().td().$class("details-control").__(subClusterId.toString()).__()
                   .td(subcluster.getState().name())
                   .td(DateFormatUtils.format(subcluster.getLastStartTime(),"yyyy-MM-dd HH:mm:ss"))
                   .td(DateFormatUtils.format(subcluster.getLastHeartBeat(),"yyyy-MM-dd HH:mm:ss"))
-                  .td(Integer.toString(subClusterInfo.getAppsFailed()))
+                  .td("<Memory:"+subClusterInfo.getTotalMB()+" MB, VCore:"+subClusterInfo.getTotalVirtualCores()+">")
                   .td(Integer.toString(subClusterInfo.getAppsKilled()))
           .__();
         }
