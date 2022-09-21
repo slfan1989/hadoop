@@ -23,6 +23,7 @@ import static org.apache.hadoop.yarn.webapp.view.JQueryUI.DATATABLES_ID;
 import static org.apache.hadoop.yarn.webapp.view.JQueryUI.initID;
 import static org.apache.hadoop.yarn.webapp.view.JQueryUI.tableInit;
 
+import org.apache.hadoop.yarn.server.resourcemanager.webapp.SchedulerPageUtil;
 import org.apache.hadoop.yarn.webapp.SubView;
 
 /**
@@ -33,11 +34,16 @@ class FederationPage extends RouterView {
   @Override
   protected void preHead(Page.HTML<__> html) {
     commonPreHead(html);
-    // setTitle("About The Federation3");
+    setTitle("About The Federation");
     set(DATATABLES_ID, "rms");
+    set("ui.div.id", "div_id");
     set(initID(DATATABLES, "rms"), rmsTableInit());
     setTableStyles(html, "rms", ".healthStatus {width:10em}",
         ".healthReport {width:10em}");
+
+
+
+
   }
 
   @Override

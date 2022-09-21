@@ -31,7 +31,6 @@ public class RouterView extends TwoColumnLayout {
   @Override
   protected void preHead(Page.HTML<__> html) {
     commonPreHead(html);
-
     setTitle("Router");
   }
 

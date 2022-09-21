@@ -31,6 +31,7 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.server.federation.store.records.SubClusterId;
 import org.apache.hadoop.yarn.server.federation.store.records.SubClusterInfo;
+import org.apache.hadoop.yarn.server.federation.store.records.SubClusterRegisterRequest;
 import org.apache.hadoop.yarn.server.federation.store.records.SubClusterState;
 import org.apache.hadoop.yarn.server.federation.utils.FederationStateStoreFacade;
 import org.apache.hadoop.yarn.server.resourcemanager.webapp.dao.ClusterMetricsInfo;
@@ -60,76 +61,61 @@ class FederationBlock extends HtmlBlock {
 
   @Override
   public void render(Block html) {
+    html.script().$type("text/javascript").
+            __("$(document).ready(function() {" +
+                    " var table = $('#rms').DataTable();" +
+                    " $('#rms tbody').on('click', 'td.details-control', function () {" +
+                    "    var tr = $(this).closest('tr');  var row = table.row( tr ); row.child('<table><tr><td>123</td><td>456</td><td>789</td></tr></table>').show(); });  });").__();
     Configuration conf = this.router.getConfig();
     boolean isEnabled = conf.getBoolean(
-        YarnConfiguration.FEDERATION_ENABLED, YarnConfiguration.DEFAULT_FEDERATION_ENABLED);
-    if (isEnabled) {
-      setTitle("About The Federation2");
+            YarnConfiguration.FEDERATION_ENABLED,
+            YarnConfiguration.DEFAULT_FEDERATION_ENABLED);
+    if (!isEnabled) {
+
+      String msg = "<table cellpadding='5' cellspacing='0' border='0' style='padding-left:50px;'>" +
+              "<tr><td>zheshiyigeceshi<td></tr></table>";
+
 
       // Table header
       TBODY<TABLE<Hamlet>> tbody = html.table("#rms").thead().tr()
-          .th(".id", "SubCluster")
-          .th(".webAppAddress","webAppAddress")
-          .th(".state","state")
-          .th(".LastStartTime","LastStartTime")
-          .th(".LastHeartBeat","LastHeartBeat")
-          .th(".Capability","Capability")
-          /*.th(".submittedA", "Applications Submitted*")
-          .th(".pendingA", "Applications Pending*")
-          .th(".runningA", "Applications Running*")
-          .th(".failedA", "Applications Failed*")
-          .th(".killedA", "Applications Killed*")
-          .th(".completedA", "Applications Completed*")
-          .th(".contAllocated", "Containers Allocated")
-          .th(".contReserved", "Containers Reserved")
-          .th(".contPending", "Containers Pending")
-          .th(".availableM", "Available Memory")
-          .th(".allocatedM", "Allocated Memory")
-          .th(".reservedM", "Reserved Memory")
-          .th(".totalM", "Total Memory")
-          .th(".availableVC", "Available VirtualCores")
-          .th(".allocatedVC", "Allocated VirtualCores")
-          .th(".reservedVC", "Reserved VirtualCores")
-          .th(".totalVC", "Total VirtualCores")
-          .th(".activeN", "Active Nodes")
-          .th(".lostN", "Lost Nodes")
-          .th(".availableN", "Available Nodes")
-          .th(".unhealtyN", "Unhealthy Nodes")
-          .th(".rebootedN", "Rebooted Nodes")
-          .th(".totalN", "Total Nodes")*/
-          .__().__().tbody();
+              .th(".id", "SubCluster")
+              //.th(".submittedA", "Applications Submitted*")
+              //.th(".pendingA", "Applications Pending*")
+              //.th(".runningA", "Applications Running*")
+              //.th(".failedA", "Applications Failed*")
+              //.th(".killedA", "Applications Killed*")
+              .__().__().tbody();
 
       try {
         // Binding to the FederationStateStore
         FederationStateStoreFacade facade =
-            FederationStateStoreFacade.getInstance();
-        Map<SubClusterId, SubClusterInfo> subClustersInfo =
-            facade.getSubClusters(true);
-
-        // Mock数据
-        SubClusterId subClusterIdxx = SubClusterId.newInstance("SC-1");
+                FederationStateStoreFacade.getInstance();
 
         String amRMAddressxx = "5.6.7.8:5";
         String clientRMAddressxx = "5.6.7.8:6";
         String rmAdminAddressxx = "5.6.7.8:7";
         String webAppAddressxx = "5.6.7.8:8";
 
-        SubClusterInfo subClusterInfoxx = SubClusterInfo.newInstance(subClusterIdxx,
+        SubClusterInfo subClusterInfoxx = SubClusterInfo.newInstance(SubClusterId.newInstance("sc-1"),
                 amRMAddressxx, clientRMAddressxx, rmAdminAddressxx, webAppAddressxx,
                 SubClusterState.SC_RUNNING, new MonotonicClock().getTime(),
-                "<400 Core,500 TB Mem>");
+                "capability");
+        facade.getStateStore().registerSubCluster(
+                SubClusterRegisterRequest.newInstance(subClusterInfoxx));
 
-        subClustersInfo.put(subClusterIdxx,subClusterInfoxx);
+        Map<SubClusterId, SubClusterInfo> subClustersInfo =
+                facade.getSubClusters(true);
+
         // Sort the SubClusters
         List<SubClusterInfo> subclusters = new ArrayList<>();
         subclusters.addAll(subClustersInfo.values());
         Comparator<? super SubClusterInfo> cmp =
-            new Comparator<SubClusterInfo>() {
-              @Override
-              public int compare(SubClusterInfo o1, SubClusterInfo o2) {
-                return o1.getSubClusterId().compareTo(o2.getSubClusterId());
-              }
-            };
+                new Comparator<SubClusterInfo>() {
+                  @Override
+                  public int compare(SubClusterInfo o1, SubClusterInfo o2) {
+                    return o1.getSubClusterId().compareTo(o2.getSubClusterId());
+                  }
+                };
         Collections.sort(subclusters, cmp);
 
         for (SubClusterInfo subcluster : subclusters) {
@@ -139,49 +125,27 @@ class FederationBlock extends HtmlBlock {
           ClusterMetricsInfo subClusterInfo = getClusterMetricsInfo(capability);
 
           // Building row per SubCluster
-          tbody.tr().td().a("//" + webAppAddress, subClusterId.toString()).__()
-                  .td(subcluster.getRMWebServiceAddress())
-                  .td(subcluster.getState().name())
-                  .td(String.valueOf(subcluster.getLastStartTime()))
-                  .td(String.valueOf(subcluster.getLastHeartBeat()))
-                  .td(subcluster.getCapability())
-              /*.td(Integer.toString(subClusterInfo.getAppsSubmitted()))
-              .td(Integer.toString(subClusterInfo.getAppsPending()))
-              .td(Integer.toString(subClusterInfo.getAppsRunning()))
-              .td(Integer.toString(subClusterInfo.getAppsFailed()))
-              .td(Integer.toString(subClusterInfo.getAppsKilled()))
-              .td(Integer.toString(subClusterInfo.getAppsCompleted()))
-              .td(Integer.toString(subClusterInfo.getContainersAllocated()))
-              .td(Integer.toString(subClusterInfo.getReservedContainers()))
-              .td(Integer.toString(subClusterInfo.getPendingContainers()))
-              .td(StringUtils.byteDesc(
-                  subClusterInfo.getAvailableMB() * BYTES_IN_MB))
-              .td(StringUtils.byteDesc(
-                  subClusterInfo.getAllocatedMB() * BYTES_IN_MB))
-              .td(StringUtils.byteDesc(
-                  subClusterInfo.getReservedMB() * BYTES_IN_MB))
-              .td(StringUtils.byteDesc(
-                  subClusterInfo.getTotalMB() * BYTES_IN_MB))
-              .td(Long.toString(subClusterInfo.getAvailableVirtualCores()))
-              .td(Long.toString(subClusterInfo.getAllocatedVirtualCores()))
-              .td(Long.toString(subClusterInfo.getReservedVirtualCores()))
-              .td(Long.toString(subClusterInfo.getTotalVirtualCores()))
-              .td(Integer.toString(subClusterInfo.getActiveNodes()))
-              .td(Integer.toString(subClusterInfo.getLostNodes()))
-              .td(Integer.toString(subClusterInfo.getDecommissionedNodes()))
-              .td(Integer.toString(subClusterInfo.getUnhealthyNodes()))
-              .td(Integer.toString(subClusterInfo.getRebootedNodes()))
-              .td(Integer.toString(subClusterInfo.getTotalNodes()))*/
-                  .__();
+          // $class("details-control")
+          // .$onclick("tdclick()")
+          tbody.tr().td().$class("details-control").__(subClusterId.toString()).__()
+                  //  .td(Integer.toString(subClusterInfo.getAppsSubmitted()))
+                  //  .td(Integer.toString(subClusterInfo.getAppsPending()))
+                  //  .td(Integer.toString(subClusterInfo.getAppsRunning()))
+                  //  .td(Integer.toString(subClusterInfo.getAppsFailed()))
+                  //  .td(Integer.toString(subClusterInfo.getAppsKilled()))
+          .__();
         }
       } catch (YarnException e) {
         LOG.error("Cannot render ResourceManager", e);
       }
 
       tbody.__().__().div()
-          .p().__("*The application counts are local per subcluster").__().__();
+              .p().__("*The application counts are local per subcluster").__().__();
+
     } else {
-      setTitle("Federation is not Enabled!");
+      Hamlet.DIV<Hamlet> div = html.div("#div_id");
+      div.p().__("Federation is not Enabled.").__().p().__("We can refer to the following documents to configure Yarn Federation. ").__()
+         .a("https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/Federation.html","[Hadoop: YARN Federation]").__();
     }
   }
 
@@ -189,11 +153,11 @@ class FederationBlock extends HtmlBlock {
     ClusterMetricsInfo clusterMetrics = null;
     try {
       JSONJAXBContext jc = new JSONJAXBContext(
-          JSONConfiguration.mapped().rootUnwrapping(false).build(),
-          ClusterMetricsInfo.class);
+              JSONConfiguration.mapped().rootUnwrapping(false).build(),
+              ClusterMetricsInfo.class);
       JSONUnmarshaller unmarshaller = jc.createJSONUnmarshaller();
       clusterMetrics = unmarshaller.unmarshalFromJSON(
-          new StringReader(capability), ClusterMetricsInfo.class);
+              new StringReader(capability), ClusterMetricsInfo.class);
     } catch (Exception e) {
       LOG.error("Cannot parse SubCluster info", e);
     }
