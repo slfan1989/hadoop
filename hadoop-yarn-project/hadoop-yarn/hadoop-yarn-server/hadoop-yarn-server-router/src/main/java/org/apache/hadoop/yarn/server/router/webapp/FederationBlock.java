@@ -62,62 +62,72 @@ class FederationBlock extends HtmlBlock {
 
   @Override
   public void render(Block html) {
-    html.script().$type("text/javascript").
-            __("$(document).ready(function() {" +
-                    " var table = $('#rms').DataTable(); \n" +
-                    " $('#rms tbody').on('click', 'td.details-control', function () { \n" +
-                    " var tr = $(this).closest('tr');  \n" +
-                    " var row = table.row( tr ); \n" +
-                    " console.log(row) \n" +
-                    " row.child('" +
-                    "     <table>" +
-                    "          <tr>" +
-                    "              <td>" +
-                    "                  <h3>Application Metrics</h3>" +
-                    "                  appsSubmitted : 0 </p>" +
-                    "                  appsCompleted : 0 </p>" +
-                    "                  appsPending   : 0 </p>" +
-                    "                  appsRunning   : 0 </p>" +
-                    "                  appsFailed    : 0 </p> " +
-                    "                  appsKilled    : 0 </p>" +
-                    "              </td>" +
-                    "              <td>" +
-                    "                 <h3>Resource Metrics</h3>" +
-                    "                 reservedMB     : 0    </p>" +
-                    "                 availableMB    : 4096 </p>" +
-                    "                 allocatedMB    : 0    </p>" +
-                    "                 pendingMB      : 0    </p>" +
-                    "                 reservedVirtualCores  :  0 </p>" +
-                    "                 availableVirtualCores :  4 </p>" +
-                    "                 allocatedVirtualCores :  0 </p>" +
-                    "                 pendingVirtualCores   :  0 </p>" +
-                    "                 containersAllocated   :  0 </p>" +
-                    "                 containersReserved    :  0 </p>" +
-                    "                 containersPending     :  0 </p>" +
-                    "                           totalMB     :  4096 </p>" +
-                    "                    totalVirtualCores  :  4    </p>" +
-                    "             </td>" +
-                    "             <td>" +
-                    "                <h3>Node Metrics</h3>" +
-                    "                totalNodes : 1 </p>" +
-                    "                lostNodes  : 0 </p>" +
-                    "                unhealthyNodes : 0 </p>" +
-                    "                decommissioningNodes : 0 </p>" +
-                    "                decommissionedNodes :  0 </p>" +
-                    "                rebootedNodes : 0 </p>" +
-                    "                activeNodes : 1 </p>" +
-                    "                shutdownNodes : 0 " +
-                    "             </td>" +
-                    "          </tr>" +
-                    "     </table>').show(); \n }); });").__();
+
     Configuration conf = this.router.getConfig();
     boolean isEnabled = conf.getBoolean(
             YarnConfiguration.FEDERATION_ENABLED,
             YarnConfiguration.DEFAULT_FEDERATION_ENABLED);
     if (!isEnabled) {
 
+      html.script().$type("text/javascript").
+              __("$(document).ready(function() {" +
+                      "var table = $('#rms').DataTable();" +
+                      " $('#rms tbody').on('click', 'td.details-control', function () { \n" +
+                      " var tr = $(this).closest('tr');  \n" +
+                      " console.log(tr.id) \n" +
+                      " var row = table.row(tr); \n" +
+                      " if (row.child.isShown())  \n {" +
+                      "  row.child.hide();  \n " +
+                      "  tr.removeClass('shown');  \n " +
+                      " } else {  \n " +
+                              " row.child('" +
+                              "     <table>" +
+                              "          <tr>" +
+                              "              <td>" +
+                              "                  <h3>Application Metrics</h3>" +
+                              "                  appsSubmitted : 0 </p>" +
+                              "                  appsCompleted : 0 </p>" +
+                              "                  appsPending   : 0 </p>" +
+                              "                  appsRunning   : 0 </p>" +
+                              "                  appsFailed    : 0 </p> " +
+                              "                  appsKilled    : 0 </p>" +
+                              "              </td>" +
+                              "              <td>" +
+                              "                 <h3>Resource Metrics</h3>" +
+                              "                 reservedMB     : 0    </p>" +
+                              "                 availableMB    : 4096 </p>" +
+                              "                 allocatedMB    : 0    </p>" +
+                              "                 pendingMB      : 0    </p>" +
+                              "                 reservedVirtualCores  :  0 </p>" +
+                              "                 availableVirtualCores :  4 </p>" +
+                              "                 allocatedVirtualCores :  0 </p>" +
+                              "                 pendingVirtualCores   :  0 </p>" +
+                              "                 containersAllocated   :  0 </p>" +
+                              "                 containersReserved    :  0 </p>" +
+                              "                 containersPending     :  0 </p>" +
+                              "                           totalMB     :  4096 </p>" +
+                              "                    totalVirtualCores  :  4    </p>" +
+                              "             </td>" +
+                              "             <td>" +
+                              "                <h3>Node Metrics</h3>" +
+                              "                totalNodes : 1 </p>" +
+                              "                lostNodes  : 0 </p>" +
+                              "                unhealthyNodes : 0 </p>" +
+                              "                decommissioningNodes : 0 </p>" +
+                              "                decommissionedNodes :  0 </p>" +
+                              "                rebootedNodes : 0 </p>" +
+                              "                activeNodes : 1 </p>" +
+                              "                shutdownNodes : 0 " +
+                              "             </td>" +
+                              "          </tr>" +
+                              "     </table>').show(); "+
+                      "   tr.addClass('shown'); " +
+                      "   " +
+                      " }" +
+                      "  \n }); });").__();
+
       // Table header
-      TBODY<TABLE<Hamlet>> tbody = html.table("#rms").$class("cell-border").$style("width:100%").thead().tr()
+      TBODY<TABLE<Hamlet>> tbody = html.table("#rms").$class("display").$style("width:100%").thead().tr()
               .th(".id", "SubCluster")
               .th(".state", "State")
               .th(".lastStartTime", "LastStartTime")
@@ -182,7 +192,7 @@ class FederationBlock extends HtmlBlock {
           // $class("details-control")
           // .$onclick("tdclick()")
 
-          tbody.tr().$id(subClusterId.toString()).td().$class(" details-control").__(subClusterId.toString()).__()
+          tbody.tr().$id(subClusterId.toString()).td().$class("details-control").__(subClusterId.toString()).__()
                   .td(subcluster.getState().name())
                   .td(DateFormatUtils.format(subcluster.getLastStartTime(),"yyyy-MM-dd HH:mm:ss"))
                   .td(DateFormatUtils.format(subcluster.getLastHeartBeat(),"yyyy-MM-dd HH:mm:ss"))
@@ -193,9 +203,12 @@ class FederationBlock extends HtmlBlock {
       } catch (YarnException | IOException | InterruptedException e) {
         LOG.error("Cannot render ResourceManager", e);
       }
+      tbody.__().__();
 
-      tbody.__().__().div()
-              .p().__("*The application counts are local per subcluster").__().__();
+     // tbody.__().__().div()
+       //       .p().__("*The application counts are local per subcluster").__().__();
+
+
 
     } else {
       Hamlet.DIV<Hamlet> div = html.div("#div_id");

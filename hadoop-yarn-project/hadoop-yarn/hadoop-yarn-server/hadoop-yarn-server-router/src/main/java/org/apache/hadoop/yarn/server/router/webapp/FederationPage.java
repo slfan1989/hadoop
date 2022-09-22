@@ -53,10 +53,10 @@ class FederationPage extends RouterView {
 
   private String rmsTableInit() {
     StringBuilder b = tableInit().append(", aoColumnDefs: [");
-    b.append("{'bSearchable': false, 'aTargets': [ 7 ]}")
+    b.append("{'bSearchable': false, 'aTargets': [ 2 ]}")
         .append(", {'sType': 'title-numeric', 'bSearchable': false, "
-            + "'aTargets': [ 8, 9 ] }")
-        .append(", {'sType': 'title-numeric', 'aTargets': [ 5 ]}")
+            + "'aTargets': [ 2 ] }")
+        .append(", {'sType': 'title-numeric', 'aTargets': [ 2 ]}")
         .append("]}");
     return b.toString();
   }
