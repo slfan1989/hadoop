@@ -40,10 +40,6 @@ class FederationPage extends RouterView {
     set(initID(DATATABLES, "rms"), rmsTableInit());
     setTableStyles(html, "rms", ".healthStatus {width:10em}",
         ".healthReport {width:10em}");
-
-
-
-
   }
 
   @Override

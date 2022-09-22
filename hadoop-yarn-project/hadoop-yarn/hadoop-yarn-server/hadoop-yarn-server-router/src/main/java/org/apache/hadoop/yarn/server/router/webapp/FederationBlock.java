@@ -203,17 +203,21 @@ class FederationBlock extends HtmlBlock {
       } catch (YarnException | IOException | InterruptedException e) {
         LOG.error("Cannot render ResourceManager", e);
       }
-      tbody.__().__();
+      // tbody.__().__();
 
-     // tbody.__().__().div()
-       //       .p().__("*The application counts are local per subcluster").__().__();
+     tbody.__().__().div()
+              .p().$style("color:red").__("*The application counts are local per subcluster").__().__();
 
 
 
     } else {
       Hamlet.DIV<Hamlet> div = html.div("#div_id");
-      div.p().__("Federation is not Enabled.").__().p().__("We can refer to the following documents to configure Yarn Federation. ").__()
-         .a("https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/Federation.html","[Hadoop: YARN Federation]").__();
+      div.p().$style("color:red").__("Federation is not Enabled.").__()
+         .p().__()
+         .p().__("We can refer to the following documents to configure Yarn Federation. ").__()
+         .p().$style("color:blue").__()
+          .a("https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/Federation.html","Hadoop: YARN Federation").
+         __();
     }
   }
 
