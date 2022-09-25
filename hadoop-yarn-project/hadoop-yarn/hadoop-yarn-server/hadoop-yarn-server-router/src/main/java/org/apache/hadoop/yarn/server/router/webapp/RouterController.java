@@ -34,7 +34,7 @@ public class RouterController extends Controller {
 
   @Override
   public void index() {
-    setTitle("About the Router");
+    setTitle("About the Yarn Router");
     render(AboutPage.class);
   }
 
