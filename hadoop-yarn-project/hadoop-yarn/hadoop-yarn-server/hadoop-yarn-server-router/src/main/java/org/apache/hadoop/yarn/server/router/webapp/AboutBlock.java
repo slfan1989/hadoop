@@ -25,6 +25,8 @@ import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.server.resourcemanager.webapp.RMWSConsts;
 import org.apache.hadoop.yarn.server.resourcemanager.webapp.dao.ClusterMetricsInfo;
 import org.apache.hadoop.yarn.server.router.Router;
+import org.apache.hadoop.yarn.util.Times;
+import org.apache.hadoop.yarn.webapp.hamlet2.Hamlet;
 import org.apache.hadoop.yarn.webapp.util.WebAppUtils;
 import org.apache.hadoop.yarn.webapp.view.HtmlBlock;
 import org.apache.hadoop.yarn.webapp.view.InfoBlock;
@@ -48,6 +50,17 @@ public class AboutBlock extends HtmlBlock {
 
   @Override
   protected void render(Block html) {
+    Hamlet.DIV<Hamlet> div = html.div().$class("alert alert-dismissable alert-info");
+    div.p().__("Federation is not Enabled.").__()
+            .p().__()
+            .p().__("We can refer to the following documents to configure Yarn Federation. ").__()
+            .p().__()
+            .a("https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/Federation.html",
+                    "Hadoop: YARN Federation").
+            __();
+
+    html.__(MetricsOverviewTable.class);
+
     Configuration conf = this.router.getConfig();
     String webAppAddress = WebAppUtils.getRouterWebAppURLWithScheme(conf);
     Client client = RouterWebServiceUtil.createJerseyClient(conf);
@@ -60,35 +73,20 @@ public class AboutBlock extends HtmlBlock {
     boolean isEnabled = conf.getBoolean(
         YarnConfiguration.FEDERATION_ENABLED,
         YarnConfiguration.DEFAULT_FEDERATION_ENABLED);
-    info("Cluster Status").
-        __("Federation Enabled", isEnabled).
-        __("Applications Submitted", metrics.getAppsSubmitted()).
-        __("Applications Pending", metrics.getAppsPending()).
-        __("Applications Running", metrics.getAppsRunning()).
-        __("Applications Failed", metrics.getAppsFailed()).
-        __("Applications Killed", metrics.getAppsKilled()).
-        __("Applications Completed", metrics.getAppsCompleted()).
-        __("Containers Allocated", metrics.getContainersAllocated()).
-        __("Containers Reserved", metrics.getReservedContainers()).
-        __("Containers Pending", metrics.getPendingContainers()).
-        __("Available Memory",
-            StringUtils.byteDesc(metrics.getAvailableMB() * BYTES_IN_MB)).
-        __("Allocated Memory",
-            StringUtils.byteDesc(metrics.getAllocatedMB() * BYTES_IN_MB)).
-        __("Reserved Memory",
-            StringUtils.byteDesc(metrics.getReservedMB() * BYTES_IN_MB)).
-        __("Total Memory",
-            StringUtils.byteDesc(metrics.getTotalMB() * BYTES_IN_MB)).
-        __("Available VirtualCores", metrics.getAvailableVirtualCores()).
-        __("Allocated VirtualCores", metrics.getAllocatedVirtualCores()).
-        __("Reserved VirtualCores", metrics.getReservedVirtualCores()).
-        __("Total VirtualCores", metrics.getTotalVirtualCores()).
-        __("Active Nodes", metrics.getActiveNodes()).
-        __("Lost Nodes", metrics.getLostNodes()).
-        __("Available Nodes", metrics.getDecommissionedNodes()).
-        __("Unhealthy Nodes", metrics.getUnhealthyNodes()).
-        __("Rebooted Nodes", metrics.getRebootedNodes()).
-        __("Total Nodes", metrics.getTotalNodes());
+
+    info("Yarn Router Overview").
+            __("Federation Enabled:", "true").
+            __("Router ID:", System.currentTimeMillis()).
+            __("Router state:", "RUNNING").
+            __("Router SubCluster Count:", 4).
+            __("Router RMStateStore:",
+            "org.apache.hadoop.yarn.server.federation.store.impl.ZookeeperFederationStateStore").
+            __("Router started on:", "星期日 九月 25 11:07:18 +0800 2022").
+            __("Router version:", "3.4.0-SNAPSHOT from 128f8cdebd34c10d3267e018b15a98d2e5612a57 by fanshilun source checksum d31deaf4cff0b954cc855f455e3b8ef on 2022-09-24T02:08Z").
+            __("Hadoop version:", "3.4.0-SNAPSHOT from 128f8cdebd34c10d3267e018b15a98d2e5612a57 by fanshilun source checksum d31deaf4cff0b954cc855f455e3b8ef on 2022-09-24T02:08Z");
+
+
+
 
     html.__(InfoBlock.class);
   }
