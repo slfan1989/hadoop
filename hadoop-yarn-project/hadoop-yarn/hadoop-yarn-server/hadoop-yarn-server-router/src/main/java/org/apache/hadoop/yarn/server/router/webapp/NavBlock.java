@@ -32,25 +32,29 @@ public class NavBlock extends HtmlBlock {
   @Override
   public void render(Block html) {
 
-    Hamlet.UL<Hamlet.DIV<Hamlet>> mainList =
-            html.div("#nav").
-            h3("Cluster").
-            ul().
-            li().a(url(""), "About").__().
-            li().a(url("federation"), "Federation").__().
-            li().a(url("nodes"), "Nodes").__();
+    Hamlet.UL<Hamlet.DIV<Hamlet>> mainList = html.div("#nav").
+        h3("Cluster").
+        ul().
+        li().a(url(""), "About").__().
+        li().a(url("federation"), "Federation").__();
 
-    Hamlet.UL<Hamlet.LI<Hamlet.UL<Hamlet.DIV<Hamlet>>>> subAppsList = mainList.
-            li().a(url("apps"), "Applications").
-            ul();
-    subAppsList.li().__();
+    Hamlet.UL<Hamlet.LI<Hamlet.UL<Hamlet.DIV<Hamlet>>>> subAppsList1 =
+        mainList.li().a(url("nodes"), "Nodes").ul();
+    subAppsList1.li().__();
+    subAppsList1.
+            li().a(url("nodes", "SC-1"), "SC-1").__();
+    subAppsList1.
+            li().a(url("nodes", "SC-2"), "SC-2").__();
+    subAppsList1.__().__();
 
-    for (YarnApplicationState state : YarnApplicationState.values()) {
-      subAppsList.
-              li().a(url("apps", state.toString()), state.toString()).__();
-    }
-
-    subAppsList.__().__();
+    Hamlet.UL<Hamlet.LI<Hamlet.UL<Hamlet.DIV<Hamlet>>>> subAppsList2 =
+        mainList.li().a(url("apps"), "Applications").ul();
+    subAppsList2.li().__();
+    subAppsList2.
+            li().a(url("nodes", "SC-1"), "SC-1").__();
+    subAppsList2.
+            li().a(url("nodes", "SC-2"), "SC-2").__();
+    subAppsList2.__().__();
 
     Hamlet.DIV<Hamlet> sectionBefore = mainList.__();
     Configuration conf = new Configuration();
