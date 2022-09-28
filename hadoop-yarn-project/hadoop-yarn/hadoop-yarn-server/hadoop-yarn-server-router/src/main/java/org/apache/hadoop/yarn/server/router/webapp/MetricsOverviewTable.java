@@ -19,14 +19,17 @@
 package org.apache.hadoop.yarn.server.router.webapp;
 
 import com.google.inject.Inject;
-import org.apache.hadoop.yarn.api.records.ResourceTypeInfo;
-import org.apache.hadoop.yarn.server.resourcemanager.ResourceManager;
-import org.apache.hadoop.yarn.util.resource.ResourceUtils;
+import com.sun.jersey.api.client.Client;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.yarn.api.records.Resource;
+import org.apache.hadoop.yarn.server.resourcemanager.webapp.RMWSConsts;
+import org.apache.hadoop.yarn.server.resourcemanager.webapp.dao.ClusterMetricsInfo;
+import org.apache.hadoop.yarn.server.router.Router;
+import org.apache.hadoop.yarn.util.resource.Resources;
 import org.apache.hadoop.yarn.webapp.hamlet2.Hamlet;
 import org.apache.hadoop.yarn.webapp.hamlet2.Hamlet.DIV;
+import org.apache.hadoop.yarn.webapp.util.WebAppUtils;
 import org.apache.hadoop.yarn.webapp.view.HtmlBlock;
-
-import java.util.Arrays;
 
 /**
  * Provides an table with an overview of many cluster wide metrics and if
@@ -34,14 +37,13 @@ import java.util.Arrays;
  * current user is using on the cluster.
  */
 public class MetricsOverviewTable extends HtmlBlock {
-  private static final long BYTES_IN_MB = 1024 * 1024;
 
-  private final ResourceManager rm;
+  private final Router router;
 
   @Inject
-  MetricsOverviewTable(ResourceManager rm, ViewContext ctx) {
+  MetricsOverviewTable(Router router, ViewContext ctx) {
     super(ctx);
-    this.rm = rm;
+    this.router = router;
   }
 
   @Override
@@ -55,38 +57,61 @@ public class MetricsOverviewTable extends HtmlBlock {
 
     DIV<Hamlet> div = html.div().$class("metrics");
 
+    ClusterMetricsInfo clusterMetricsInfo = getClusterMetricsInfo();
+
+    Resource usedResources;
+    Resource totalResources;
+    Resource reservedResources;
+    int allocatedContainers;
+    if (clusterMetricsInfo.getCrossPartitionMetricsAvailable()) {
+      allocatedContainers = clusterMetricsInfo.getTotalAllocatedContainersAcrossPartition();
+      usedResources = clusterMetricsInfo.getTotalUsedResourcesAcrossPartition().getResource();
+      totalResources = clusterMetricsInfo.getTotalClusterResourcesAcrossPartition().getResource();
+      reservedResources = clusterMetricsInfo.getTotalReservedResourcesAcrossPartition().getResource();
+      // getTotalUsedResourcesAcrossPartition includes reserved resources.
+      Resources.subtractFrom(usedResources, reservedResources);
+    } else {
+      allocatedContainers = clusterMetricsInfo.getContainersAllocated();
+      usedResources = Resource.newInstance(
+              clusterMetricsInfo.getAllocatedMB(),
+              (int) clusterMetricsInfo.getAllocatedVirtualCores());
+      totalResources = Resource.newInstance(
+              clusterMetricsInfo.getTotalMB(),
+              (int) clusterMetricsInfo.getTotalVirtualCores());
+      reservedResources = Resource.newInstance(
+              clusterMetricsInfo.getReservedMB(),
+              (int) clusterMetricsInfo.getReservedVirtualCores());
+    }
+
     div.h3("Federation Cluster Metrics").
-            table("#metricsoverview").
-            thead().$class("ui-widget-header").
-            tr().
-            th().$class("ui-state-default").__("Apps Submitted").__().
-            th().$class("ui-state-default").__("Apps Pending").__().
-            th().$class("ui-state-default").__("Apps Running").__().
-            th().$class("ui-state-default").__("Apps Completed").__().
-            th().$class("ui-state-default").__("Containers Running").__().
-            th().$class("ui-state-default").__("Used Resources").__().
-            th().$class("ui-state-default").__("Total Resources").__().
-            th().$class("ui-state-default").__("Reserved Resources").__().
-            th().$class("ui-state-default").__("Physical Mem Used %").__().
-            th().$class("ui-state-default").__("Physical VCores Used %").__().
-            __().
-            __().
-            tbody().$class("ui-widget-content").
-            tr().
-            td(String.valueOf(1)).
-            td(String.valueOf(1)).
-            td(String.valueOf(1)).
-            td(
-                    String.valueOf(
-                            3
-                    )
-            ).
-            td(String.valueOf(123)).
-            td("<memory:0 B, vCores:0>").
-            td("<memory:0 B, vCores:0>").
-            td("<memory:0 B, vCores:0>").
-            td(String.valueOf("10%")).
-            td(String.valueOf("10%")).
+        table("#metricsoverview").
+        thead().$class("ui-widget-header").
+        tr().
+        th().$class("ui-state-default").__("Apps Submitted").__().
+        th().$class("ui-state-default").__("Apps Pending").__().
+        th().$class("ui-state-default").__("Apps Running").__().
+        th().$class("ui-state-default").__("Apps Completed").__().
+        th().$class("ui-state-default").__("Containers Running").__().
+        th().$class("ui-state-default").__("Used Resources").__().
+        th().$class("ui-state-default").__("Total Resources").__().
+        th().$class("ui-state-default").__("Reserved Resources").__().
+        th().$class("ui-state-default").__("Physical Mem Used %").__().
+        th().$class("ui-state-default").__("Physical VCores Used %").__().
+        __().
+        __().
+        tbody().$class("ui-widget-content").
+        tr().
+        td(String.valueOf(clusterMetricsInfo.getAppsSubmitted())).
+        td(String.valueOf(clusterMetricsInfo.getAppsPending())).
+        td(String.valueOf(clusterMetricsInfo.getAppsRunning())).
+        td(String.valueOf(clusterMetricsInfo.getAppsCompleted() +
+            clusterMetricsInfo.getAppsFailed() + clusterMetricsInfo.getAppsKilled())).
+            td(String.valueOf(allocatedContainers)).
+            td(usedResources.getFormattedString()).
+            td(totalResources.getFormattedString()).
+            td(reservedResources.getFormattedString()).
+            td(String.valueOf(clusterMetricsInfo.getUtilizedMBPercent())).
+            td(String.valueOf(clusterMetricsInfo.getUtilizedVirtualCoresPercent())).
             __().
             __().__();
 
@@ -105,13 +130,13 @@ public class MetricsOverviewTable extends HtmlBlock {
             __().
             tbody().$class("ui-widget-content").
             tr().
-            td().a(url("nodes"), String.valueOf(10)).__().
-            td().a(url("nodes/decommissioning"), String.valueOf(2)).__().
-            td().a(url("nodes/decommissioned"), String.valueOf(3)).__().
-            td().a(url("nodes/lost"), String.valueOf(2)).__().
-            td().a(url("nodes/unhealthy"), String.valueOf(1)).__().
-            td().a(url("nodes/rebooted"), String.valueOf(1)).__().
-            td().a(url("nodes/shutdown"), String.valueOf(1)).__().
+            td(String.valueOf(clusterMetricsInfo.getActiveNodes())).
+            td(String.valueOf(clusterMetricsInfo.getDecommissioningNodes())).
+            td(String.valueOf(clusterMetricsInfo.getDecommissionedNodes())).
+            td(String.valueOf(clusterMetricsInfo.getLostNodes())).
+            td(String.valueOf(clusterMetricsInfo.getUnhealthyNodes())).
+            td(String.valueOf(clusterMetricsInfo.getRebootedNodes())).
+            td(String.valueOf(clusterMetricsInfo.getShutdownNodes())).
             __().
             __().__();
 
@@ -149,5 +174,18 @@ public class MetricsOverviewTable extends HtmlBlock {
             __().__();
 
     div.__();
+  }
+
+  private ClusterMetricsInfo getClusterMetricsInfo() {
+    Configuration conf = this.router.getConfig();
+    String webAppAddress = WebAppUtils.getRouterWebAppURLWithScheme(conf);
+    Client client = RouterWebServiceUtil.createJerseyClient(conf);
+
+    ClusterMetricsInfo metrics = RouterWebServiceUtil
+        .genericForward(webAppAddress, null, ClusterMetricsInfo.class, HTTPMethods.GET,
+        RMWSConsts.RM_WEB_SERVICE_PATH + RMWSConsts.METRICS, null, null,
+        conf, client);
+
+    return metrics;
   }
 }

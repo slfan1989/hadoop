@@ -22,6 +22,7 @@ import java.io.PrintWriter;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.webapp.MimeType;
 import org.apache.hadoop.yarn.webapp.SubView;
 import org.apache.hadoop.yarn.webapp.WebAppException;
@@ -85,7 +86,7 @@ public abstract class HtmlBlock extends TextView implements SubView {
    * Render a block of html. To be overridden by implementation.
    * @param html the block to render
    */
-  protected abstract void render(Block html);
+  protected abstract void render(Block html) ;
 
   protected UserGroupInformation getCallerUGI() {
     // Check for the authorization.

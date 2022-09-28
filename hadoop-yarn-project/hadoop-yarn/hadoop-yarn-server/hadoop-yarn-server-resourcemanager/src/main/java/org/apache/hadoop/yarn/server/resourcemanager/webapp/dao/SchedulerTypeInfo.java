@@ -21,13 +21,20 @@ package org.apache.hadoop.yarn.server.resourcemanager.webapp.dao;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.Map;
 
 @XmlRootElement(name = "scheduler")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class SchedulerTypeInfo {
-  protected SchedulerInfo schedulerInfo;
+  private SchedulerInfo schedulerInfo;
+
+  private Map<String, SchedulerInfo> schedulerInfoMap;
 
   public SchedulerTypeInfo() {
+  } // JAXB needs this
+
+  public SchedulerTypeInfo(Map<String, SchedulerInfo> paramSchedulerInfoMap) {
+    this.schedulerInfoMap = paramSchedulerInfoMap;
   } // JAXB needs this
 
   public SchedulerTypeInfo(final SchedulerInfo scheduler) {
@@ -36,5 +43,13 @@ public class SchedulerTypeInfo {
 
   public SchedulerInfo getSchedulerInfo() {
     return schedulerInfo;
+  }
+
+  public Map<String, SchedulerInfo> getSchedulerInfoMap() {
+    return schedulerInfoMap;
+  }
+
+  public void setSchedulerInfoMap(Map<String, SchedulerInfo> schedulerInfoMap) {
+    this.schedulerInfoMap = schedulerInfoMap;
   }
 }
