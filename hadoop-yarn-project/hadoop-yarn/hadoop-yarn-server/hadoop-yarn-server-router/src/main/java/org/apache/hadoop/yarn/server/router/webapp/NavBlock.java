@@ -24,6 +24,9 @@ import org.apache.hadoop.yarn.server.webapp.WebPageUtils;
 import org.apache.hadoop.yarn.webapp.hamlet2.Hamlet;
 import org.apache.hadoop.yarn.webapp.view.HtmlBlock;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Navigation block for the Router Web UI.
  */
@@ -38,48 +41,41 @@ public class NavBlock extends HtmlBlock {
         li().a(url(""), "About").__().
         li().a(url("federation"), "Federation").__();
 
+    List<String> subclusters = new ArrayList<>();
+    subclusters.add("SC-1");
+    subclusters.add("SC-2");
+
     Hamlet.UL<Hamlet.LI<Hamlet.UL<Hamlet.DIV<Hamlet>>>> subAppsList1 =
         mainList.li().a(url("nodes"), "Nodes").ul();
+
+    // ### nodes info
     subAppsList1.li().__();
-    subAppsList1.
-        li().a(url("nodes", "SC-1"), "SC-1").__();
-    subAppsList1.
-        li().a(url("nodes", "SC-2"), "SC-2").__();
+    for (String subcluster : subclusters) {
+      subAppsList1.li().a(url("nodes", subcluster), subcluster).__();
+    }
     subAppsList1.__().__();
 
-
-
+    // ### applications info
     Hamlet.UL<Hamlet.LI<Hamlet.UL<Hamlet.DIV<Hamlet>>>> subAppsList2 =
         mainList.li().a(url("apps"), "Applications").ul();
 
-
-
-
     subAppsList2.li().__();
-
-    /** 1. **/
-    Hamlet.LI<Hamlet.UL<Hamlet.LI<Hamlet.UL<Hamlet.DIV<Hamlet>>>>> subAppsList3 = subAppsList2.
-        li().a(url("nodes", "SC-1"), "SC-1");
-
-    Hamlet.UL<Hamlet.LI<Hamlet.UL<Hamlet.LI<Hamlet.UL<Hamlet.DIV<Hamlet>>>>>> subAppsList4 =
-        subAppsList3.ul();
-
-    subAppsList4.li().__();
-    for (YarnApplicationState state : YarnApplicationState.values()) {
-      subAppsList4.
-              li().a(url("apps", state.toString()), state.toString()).__();
+    for (String subcluster : subclusters) {
+      Hamlet.LI<Hamlet.UL<Hamlet.LI<Hamlet.UL<Hamlet.DIV<Hamlet>>>>> subAppsList3 = subAppsList2.
+              li().a(url("nodes", subcluster), subcluster);
+      Hamlet.UL<Hamlet.LI<Hamlet.UL<Hamlet.LI<Hamlet.UL<Hamlet.DIV<Hamlet>>>>>> subAppsList4 =
+              subAppsList3.ul();
+      subAppsList4.li().__();
+      for (YarnApplicationState state : YarnApplicationState.values()) {
+        subAppsList4.
+                li().a(url("apps", state.toString()), state.toString()).__();
+      }
+      subAppsList4.li().__().__();
+      subAppsList3.__();
     }
-    subAppsList4.li().__().__();
-
-    subAppsList3.__();
-
-    /** 2. **/
-    subAppsList2.
-        li().a(url("nodes", "SC-2"), "SC-2").__();
     subAppsList2.__().__();
 
-
-
+    // ### tools
     Hamlet.DIV<Hamlet> sectionBefore = mainList.__();
     Configuration conf = new Configuration();
     Hamlet.UL<Hamlet.DIV<Hamlet>> tools = WebPageUtils.appendToolSection(sectionBefore, conf);
@@ -89,12 +85,5 @@ public class NavBlock extends HtmlBlock {
     }
 
     tools.__().__();
-
-    /*li().a(url("apps"), "Applications").__().
-      __().
-      h3("Tools").
-      ul().li().a("/conf", "Configuration").__().li().a("/logs", "Local logs").__().
-        li().a("/stacks", "Server stacks").__().
-        li().a("/jmx?qry=Hadoop:*", "Server metrics").__().__().__();*/
   }
 }
