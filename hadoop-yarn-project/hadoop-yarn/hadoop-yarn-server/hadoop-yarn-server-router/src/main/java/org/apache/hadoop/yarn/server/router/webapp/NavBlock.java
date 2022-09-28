@@ -46,7 +46,7 @@ public class NavBlock extends HtmlBlock {
     subclusters.add("SC-2");
 
     Hamlet.UL<Hamlet.LI<Hamlet.UL<Hamlet.DIV<Hamlet>>>> subAppsList1 =
-        mainList.li().a(url("nodes"), "Nodes").ul();
+        mainList.li().a(url("nodes"), "Nodes").ul().$style("padding:0.3em 1em 0.1em 2em");
 
     // ### nodes info
     subAppsList1.li().__();
@@ -64,7 +64,7 @@ public class NavBlock extends HtmlBlock {
       Hamlet.LI<Hamlet.UL<Hamlet.LI<Hamlet.UL<Hamlet.DIV<Hamlet>>>>> subAppsList3 = subAppsList2.
               li().a(url("nodes", subcluster), subcluster);
       Hamlet.UL<Hamlet.LI<Hamlet.UL<Hamlet.LI<Hamlet.UL<Hamlet.DIV<Hamlet>>>>>> subAppsList4 =
-              subAppsList3.ul();
+              subAppsList3.ul().$style("padding:0.3em 1em 0.1em 2em");
       subAppsList4.li().__();
       for (YarnApplicationState state : YarnApplicationState.values()) {
         subAppsList4.
