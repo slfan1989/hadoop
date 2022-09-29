@@ -76,11 +76,11 @@ import org.apache.hadoop.yarn.server.federation.store.records.UpdateReservationH
 import org.apache.hadoop.yarn.server.federation.store.records.UpdateReservationHomeSubClusterResponse;
 import org.apache.hadoop.yarn.server.federation.store.records.RouterMasterKeyRequest;
 import org.apache.hadoop.yarn.server.federation.store.records.RouterMasterKeyResponse;
+import org.apache.hadoop.yarn.server.federation.store.records.ApplicationHomeSubCluster;
 import org.apache.hadoop.yarn.server.federation.utils.FederationStateStoreFacade;
 import org.apache.hadoop.yarn.server.records.Version;
 import org.apache.hadoop.yarn.server.resourcemanager.RMContext;
 import org.apache.hadoop.yarn.server.resourcemanager.ResourceManager;
-import org.apache.hadoop.yarn.server.resourcemanager.recovery.FileSystemRMStateStore;
 import org.apache.hadoop.yarn.webapp.util.WebAppUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,6 +106,7 @@ public class FederationStateStoreService extends AbstractService
   private long heartbeatInterval;
   private long heartbeatInitialDelay;
   private RMContext rmContext;
+  private String cleanUpThreadNamePrefix = "FederationStateStoreService-Clean-Thread";
 
   public FederationStateStoreService(RMContext rmContext) {
     super(FederationStateStoreService.class.getName());
@@ -384,10 +385,57 @@ public class FederationStateStoreService extends AbstractService
     throw new NotImplementedException("Code is not implemented");
   }
 
-  public Runnable createCleanUpFinishApplicationThread() {
+  /**
+   * Create a thread that cleans up the app.
+   * @param stage rm-start/rm-stop.
+   */
+  public void createCleanUpFinishApplicationThread(String stage) {
+    String threadName = cleanUpThreadNamePrefix + "-" + stage;
+    Thread finishApplicationThread = new Thread(createCleanUpFinishApplicationThread());
+    finishApplicationThread.setName(threadName);
+    finishApplicationThread.start();
+  }
+
+  /**
+   * Create a thread that cleans up the app.
+   *
+   * @return thread object.
+   */
+  private Runnable createCleanUpFinishApplicationThread() {
     return () -> {
-      GetApplicationsHomeSubClusterRequest request =
-          GetApplicationsHomeSubClusterRequest.newInstance();
+
+      try {
+        // Get the current RM's App list based on subClusterId
+        GetApplicationsHomeSubClusterRequest request =
+            GetApplicationsHomeSubClusterRequest.newInstance(subClusterId);
+        GetApplicationsHomeSubClusterResponse response =
+            getApplicationsHomeSubCluster(request);
+        List<ApplicationHomeSubCluster> applications = response.getAppsHomeSubClusters();
+
+        // Traverse the app list and clean up the app.
+        long successCleanUpAppCount = 0;
+        for (ApplicationHomeSubCluster application : applications) {
+          ApplicationId applicationId = application.getApplicationId();
+          if (!this.rmContext.getRMApps().containsKey(applicationId)) {
+            try {
+              DeleteApplicationHomeSubClusterResponse deleteResponse =
+                  cleanUpFinishApplicationsWithRetries(applicationId);
+              if (deleteResponse != null) {
+                LOG.info("application = {} has been cleaned up successfully.", applicationId);
+                successCleanUpAppCount++;
+              }
+            } catch (YarnException e) {
+              LOG.error("problem during application = {} cleanup.", applicationId, e);
+            }
+          }
+        }
+
+        // print app cleanup log
+        LOG.info("cleanup finished applications size = {}, number = {} successful cleanups.",
+            applications.size(), successCleanUpAppCount);
+      } catch (Exception e) {
+        LOG.error("problem during cleanup applications.", e);
+      }
     };
   }
 
@@ -398,7 +446,7 @@ public class FederationStateStoreService extends AbstractService
    * @return DeleteApplicationHomeSubClusterResponse.
    * @throws Exception exception occurs.
    */
-  private DeleteApplicationHomeSubClusterResponse
+  public DeleteApplicationHomeSubClusterResponse
       cleanUpFinishApplicationsWithRetries(ApplicationId applicationId) throws Exception {
     DeleteApplicationHomeSubClusterRequest request =
         DeleteApplicationHomeSubClusterRequest.newInstance(applicationId);
