@@ -20,8 +20,9 @@ package org.apache.hadoop.yarn.server.resourcemanager.federation;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
+
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.hadoop.conf.Configuration;
@@ -29,6 +30,7 @@ import org.apache.hadoop.io.retry.RetryPolicy;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.util.concurrent.HadoopExecutors;
+import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.exceptions.YarnRuntimeException;
@@ -78,6 +80,7 @@ import org.apache.hadoop.yarn.server.federation.utils.FederationStateStoreFacade
 import org.apache.hadoop.yarn.server.records.Version;
 import org.apache.hadoop.yarn.server.resourcemanager.RMContext;
 import org.apache.hadoop.yarn.server.resourcemanager.ResourceManager;
+import org.apache.hadoop.yarn.server.resourcemanager.recovery.FileSystemRMStateStore;
 import org.apache.hadoop.yarn.webapp.util.WebAppUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,6 +99,7 @@ public class FederationStateStoreService extends AbstractService
 
   private Configuration config;
   private ScheduledExecutorService scheduledExecutorService;
+  private ExecutorService threadpool;
   private FederationStateStoreHeartbeat stateStoreHeartbeat;
   private FederationStateStore stateStoreClient = null;
   private SubClusterId subClusterId;
@@ -228,6 +232,7 @@ public class FederationStateStoreService extends AbstractService
         heartbeatInitialDelay, heartbeatInterval, TimeUnit.SECONDS);
     LOG.info("Started federation membership heartbeat with interval: {} and initial delay: {}",
         heartbeatInterval, heartbeatInitialDelay);
+    this.threadpool = Executors.newCachedThreadPool();
   }
 
   @VisibleForTesting
@@ -377,5 +382,58 @@ public class FederationStateStoreService extends AbstractService
   public RouterMasterKeyResponse getMasterKeyByDelegationKey(RouterMasterKeyRequest request)
       throws YarnException, IOException {
     throw new NotImplementedException("Code is not implemented");
+  }
+
+  public Runnable createCleanUpFinishApplicationThread() {
+    return () -> {
+      GetApplicationsHomeSubClusterRequest request =
+          GetApplicationsHomeSubClusterRequest.newInstance();
+    };
+  }
+
+  /**
+   * Clean up the completed Application.
+   *
+   * @param applicationId app id.
+   * @return DeleteApplicationHomeSubClusterResponse.
+   * @throws Exception exception occurs.
+   */
+  private DeleteApplicationHomeSubClusterResponse
+      cleanUpFinishApplicationsWithRetries(ApplicationId applicationId) throws Exception {
+    DeleteApplicationHomeSubClusterRequest request =
+        DeleteApplicationHomeSubClusterRequest.newInstance(applicationId);
+    return new FederationStateStoreAction<DeleteApplicationHomeSubClusterResponse>() {
+      @Override
+      public DeleteApplicationHomeSubClusterResponse run() throws Exception {
+        return deleteApplicationHomeSubCluster(request);
+      }
+    }.runWithRetries();
+  }
+
+  /**
+   * Define an abstract class, abstract retry method,
+   * which can be used for other methods later.
+   *
+   * @param <T> abstract parameter
+   */
+  private abstract class FederationStateStoreAction<T> {
+    abstract T run() throws Exception;
+
+    T runWithRetries() throws Exception {
+      int retry = 0;
+      while (true) {
+        try {
+          return run();
+        } catch (Exception e) {
+          LOG.info("Exception while executing an FederationStateStore operation.", e);
+          if (++retry > 10) {
+            LOG.info("Maxed out FederationStateStore retries. Giving up!");
+            throw e;
+          }
+          LOG.info("Retrying operation on FederationStateStore. Retry no. " + retry);
+          Thread.sleep(10);
+        }
+      }
+    }
   }
 }
