@@ -52,6 +52,19 @@ public class NodesBlock extends HtmlBlock {
 
   @Override
   protected void render(Block html) {
+
+    Hamlet.DIV<Hamlet> div = html.div().$class("alert alert-dismissable alert-info");
+    div.p().$style("color:red").__("Federation is not Enabled.").__()
+            .p().__()
+            .p().__("We can refer to the following documents to configure Yarn Federation. ").__()
+            .p().__()
+            .a("https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/Federation.html",
+                    "Hadoop: YARN Federation").
+            __();
+
+    html.__(MetricsOverviewTable.class);
+
+
     // Get the node info from the federation
     Configuration conf = this.router.getConfig();
     Client client = RouterWebServiceUtil.createJerseyClient(conf);
@@ -84,10 +97,10 @@ public class NodesBlock extends HtmlBlock {
       int usedMemory = (int) info.getUsedMemory();
       int availableMemory = (int) info.getAvailableMemory();
       TR<TBODY<TABLE<Hamlet>>> row = tbody.tr();
-      row.td().__(StringUtils.join(",", info.getNodeLabels())).__();
-      row.td().__(info.getRack()).__();
-      row.td().__(info.getState()).__();
-      row.td().__(info.getNodeId()).__();
+      row.td().__("N/A").__();
+      row.td().__("N/A").__();
+      row.td().__("N/A").__();
+      row.td().__("N/A").__();
       boolean isInactive = false;
       if (isInactive) {
         row.td().__("N/A").__();
@@ -96,16 +109,16 @@ public class NodesBlock extends HtmlBlock {
         row.td().a("//" + httpAddress, httpAddress).__();
       }
       row.td().br().$title(String.valueOf(info.getLastHealthUpdate())).__()
-          .__(Times.format(info.getLastHealthUpdate())).__()
-          .td(info.getHealthReport())
-          .td(String.valueOf(info.getNumContainers())).td().br()
+          .__("N/A").__()
+          .td("N/A")
+          .td("N/A").td().br()
           .$title(String.valueOf(usedMemory)).__()
-          .__(StringUtils.byteDesc(usedMemory * BYTES_IN_MB)).__().td().br()
+          .__("N/A").__().td().br()
           .$title(String.valueOf(availableMemory)).__()
-          .__(StringUtils.byteDesc(availableMemory * BYTES_IN_MB)).__()
-          .td(String.valueOf(info.getUsedVirtualCores()))
-          .td(String.valueOf(info.getAvailableVirtualCores()))
-          .td(info.getVersion()).__();
+          .__("N/A").__()
+          .td("N/A")
+          .td("N/A")
+          .td("N/A").__();
     }
     tbody.__().__();
   }

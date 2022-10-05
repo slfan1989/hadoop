@@ -994,8 +994,14 @@ public class FederationInterceptorREST extends AbstractRESTRequestInterceptor {
       ClientMethod remoteMethod = new ClientMethod("getNodes", argsClasses, args);
       Map<SubClusterInfo, NodesInfo> nodesMap =
           invokeConcurrent(subClustersActive.values(), remoteMethod, NodesInfo.class);
-      nodesMap.values().stream().forEach(nodesInfo -> {
-        nodes.addAll(nodesInfo.getNodes());
+      nodesMap.entrySet().stream().forEach((entrySet) -> {
+        SubClusterInfo subClusterInfo = entrySet.getKey();
+        NodesInfo nodesInfo = entrySet.getValue();
+        List<NodeInfo> nodesX = nodesInfo.getNodes().stream().map(nodeInfo -> {
+          nodeInfo.setSubClusterId(subClusterInfo.getSubClusterId().getId());
+          return nodeInfo;
+        }).collect(Collectors.toList());
+        nodes.addAll(nodesX);
       });
     } catch (NotFoundException e) {
       LOG.error("Get all active sub cluster(s) error.", e);
