@@ -102,6 +102,7 @@ import org.apache.hadoop.yarn.server.router.RouterMetrics;
 import org.apache.hadoop.yarn.server.router.RouterServerUtil;
 import org.apache.hadoop.yarn.server.router.clientrm.ClientMethod;
 import org.apache.hadoop.yarn.server.router.webapp.cache.RouterAppInfoCacheKey;
+import org.apache.hadoop.yarn.server.router.webapp.dao.FederationClusterInfo;
 import org.apache.hadoop.yarn.server.webapp.dao.AppAttemptInfo;
 import org.apache.hadoop.yarn.server.webapp.dao.ContainerInfo;
 import org.apache.hadoop.yarn.server.webapp.dao.ContainersInfo;
@@ -1130,7 +1131,7 @@ public class FederationInterceptorREST extends AbstractRESTRequestInterceptor {
 
   @Override
   public ClusterInfo getClusterInfo() {
-    throw new NotImplementedException("Code is not implemented");
+    return new FederationClusterInfo();
   }
 
   @Override

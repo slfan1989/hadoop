@@ -19,9 +19,7 @@
 package org.apache.hadoop.yarn.server.router.webapp;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -29,6 +27,7 @@ import javax.ws.rs.core.Response;
 
 import com.sun.jersey.api.client.Client;
 import org.apache.hadoop.security.authorize.AuthorizationException;
+import org.apache.hadoop.util.Lists;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.exceptions.YarnRuntimeException;
 import org.apache.hadoop.yarn.server.federation.store.records.SubClusterId;
@@ -63,6 +62,7 @@ import org.apache.hadoop.yarn.server.resourcemanager.webapp.dao.ResourceInfo;
 import org.apache.hadoop.yarn.server.resourcemanager.webapp.dao.ResourceOptionInfo;
 import org.apache.hadoop.yarn.server.resourcemanager.webapp.dao.BulkActivitiesInfo;
 import org.apache.hadoop.yarn.server.resourcemanager.webapp.dao.SchedulerTypeInfo;
+import org.apache.hadoop.yarn.server.router.webapp.dao.FederationClusterInfo;
 import org.apache.hadoop.yarn.server.webapp.dao.AppAttemptInfo;
 import org.apache.hadoop.yarn.server.webapp.dao.ContainerInfo;
 import org.apache.hadoop.yarn.server.webapp.dao.ContainersInfo;
@@ -113,10 +113,19 @@ public class DefaultRequestInterceptorREST
 
   @Override
   public ClusterInfo getClusterInfo() {
-    return RouterWebServiceUtil.genericForward(webAppAddress, null,
+
+    ClusterInfo clusterInfo = RouterWebServiceUtil.genericForward(webAppAddress, null,
         ClusterInfo.class, HTTPMethods.GET,
         RMWSConsts.RM_WEB_SERVICE_PATH + RMWSConsts.INFO, null, null,
         getConf(), client);
+
+    ArrayList<ClusterInfo> lists = Lists.newArrayList();
+    lists.add(clusterInfo);
+    lists.add(clusterInfo);
+
+    FederationClusterInfo federationClusterInfo = new FederationClusterInfo(lists);
+
+    return federationClusterInfo;
   }
 
   @Override

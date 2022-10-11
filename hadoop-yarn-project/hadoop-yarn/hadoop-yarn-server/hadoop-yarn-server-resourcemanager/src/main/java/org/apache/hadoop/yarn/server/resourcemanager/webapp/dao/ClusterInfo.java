@@ -31,8 +31,8 @@ import org.apache.hadoop.yarn.util.YarnVersionInfo;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class ClusterInfo {
 
-  protected long id;
-  protected long startedOn;
+  protected Long id;
+  protected Long startedOn;
   protected STATE state;
   protected HAServiceProtocol.HAServiceState haState;
   protected String rmStateStoreName;
@@ -43,6 +43,7 @@ public class ClusterInfo {
   protected String hadoopBuildVersion;
   protected String hadoopVersionBuiltOn;
   protected String haZooKeeperConnectionState;
+  private String subClusterId;
 
   public ClusterInfo() {
   } // JAXB needs this
@@ -64,6 +65,7 @@ public class ClusterInfo {
     this.hadoopVersionBuiltOn = VersionInfo.getDate();
     this.haZooKeeperConnectionState =
         rm.getRMContext().getHAZookeeperConnectionState();
+    this.subClusterId = "SC-1";
   }
 
   public String getState() {
