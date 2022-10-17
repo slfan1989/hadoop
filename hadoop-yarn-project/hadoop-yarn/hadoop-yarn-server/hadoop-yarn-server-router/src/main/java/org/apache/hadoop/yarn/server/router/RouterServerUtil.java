@@ -23,6 +23,7 @@ import org.apache.hadoop.classification.InterfaceAudience.Private;
 import org.apache.hadoop.classification.InterfaceAudience.Public;
 import org.apache.hadoop.classification.InterfaceStability.Unstable;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.exceptions.YarnException;
@@ -444,6 +445,31 @@ public final class RouterServerUtil {
         || !NumberUtils.isDigits(attemptId) || !NumberUtils.isDigits(cid)
         || !NumberUtils.isDigits(epoch)) {
       throw new IllegalArgumentException("Invalid ContainerId: " + containerId);
+    }
+  }
+
+  public static UserGroupInformation setupUser(String userName) {
+    UserGroupInformation user = null;
+    try {
+
+      // Do not create a proxy user if user name matches the user name on
+      // current UGI
+      if (UserGroupInformation.isSecurityEnabled()) {
+        user = UserGroupInformation.createProxyUser(userName, UserGroupInformation.getLoginUser());
+      } else if (userName.equalsIgnoreCase(UserGroupInformation.getCurrentUser().getUserName())) {
+        user = UserGroupInformation.getCurrentUser();
+      } else {
+        user = UserGroupInformation.createProxyUser(userName,
+            UserGroupInformation.getCurrentUser());
+      }
+      return user;
+    } catch (IOException e) {
+      String message = "Error while creating Router ClientRM Service for user:";
+      if (user != null) {
+        message += ", user: " + user;
+      }
+      LOG.warn(message);
+      throw new YarnRuntimeException(message, e);
     }
   }
 }
