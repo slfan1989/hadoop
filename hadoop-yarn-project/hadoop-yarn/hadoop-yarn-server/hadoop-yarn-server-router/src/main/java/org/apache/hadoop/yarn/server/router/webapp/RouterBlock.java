@@ -103,7 +103,7 @@ public abstract class RouterBlock extends HtmlBlock {
     boolean isEnabled = conf.getBoolean(
         YarnConfiguration.FEDERATION_ENABLED,
         YarnConfiguration.DEFAULT_FEDERATION_ENABLED);
-    return isEnabled;
+    return true;
   }
 
   /**

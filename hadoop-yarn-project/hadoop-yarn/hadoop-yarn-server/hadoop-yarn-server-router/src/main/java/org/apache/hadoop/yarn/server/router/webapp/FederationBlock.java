@@ -158,23 +158,38 @@ class FederationBlock extends RouterBlock {
         long totalMB = subClusterInfo.getTotalMB();
         String totalMBDesc = StringUtils.byteDesc(totalMB * BYTES_IN_MB);
         long totalVirtualCores = subClusterInfo.getTotalVirtualCores();
-        String resources = String.format("<Memory:%s, VCore:%s>", totalMBDesc, totalVirtualCores);
+        String resources = String.format("<memory:%s, vCores:%s>", totalMBDesc, totalVirtualCores);
 
         // Prepare Node
         long totalNodes = subClusterInfo.getTotalNodes();
         long activeNodes = subClusterInfo.getActiveNodes();
-        String nodes = String.format("<Total Nodes:%s, Active Nodes:%s>", totalNodes, activeNodes);
+        String nodes = String.format("<totalNodes:%s, activeNodes:%s>", totalNodes, activeNodes);
 
         // Prepare HTML Table
         tbody.tr().$id(subClusterIdText)
             .td().$class("details-control").a(herfWebAppAddress, subClusterIdText).__()
-            .td(subcluster.getState().name())
+            .td().$style("color:#28a745;font-weight:bolder").__(subcluster.getState().name()).__()
             .td(lastStartTime)
             .td(lastHeartBeat)
             .td(resources)
             .td(nodes)
             .__();
 
+        // Formatted memory information
+        long allocatedMB = subClusterInfo.getAllocatedMB();
+        String allocatedMBDesc = StringUtils.byteDesc(allocatedMB * BYTES_IN_MB);
+        long availableMB = subClusterInfo.getAvailableMB();
+        String availableMBDesc = StringUtils.byteDesc(availableMB * BYTES_IN_MB);
+        long pendingMB = subClusterInfo.getPendingMB();
+        String pendingMBDesc = StringUtils.byteDesc(pendingMB * BYTES_IN_MB);
+        long reservedMB = subClusterInfo.getReservedMB();
+        String reservedMBDesc = StringUtils.byteDesc(reservedMB * BYTES_IN_MB);
+
+        subclusterMap.put("totalmemory", totalMBDesc);
+        subclusterMap.put("allocatedmemory", allocatedMBDesc);
+        subclusterMap.put("availablememory", availableMBDesc);
+        subclusterMap.put("pendingmemory", pendingMBDesc);
+        subclusterMap.put("reservedmemory", reservedMBDesc);
         subclusterMap.put("subcluster", subClusterId.getId());
         subclusterMap.put("capability", capability);
         lists.add(subclusterMap);
