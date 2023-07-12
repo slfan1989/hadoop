@@ -39,6 +39,7 @@ import org.apache.hadoop.registry.client.api.RegistryOperations;
 import org.apache.hadoop.registry.client.impl.FSRegistryOperationsService;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.test.LambdaTestUtils;
+import org.apache.hadoop.util.Time;
 import org.apache.hadoop.yarn.api.protocolrecords.AllocateRequest;
 import org.apache.hadoop.yarn.api.protocolrecords.AllocateResponse;
 import org.apache.hadoop.yarn.api.protocolrecords.FinishApplicationMasterRequest;
@@ -130,6 +131,8 @@ public class TestFederationInterceptor extends BaseAMRMProxyTest {
 
     testAppId = 1;
     attemptId = getApplicationAttemptId(testAppId);
+    stateStore.setApplicationContext(HOME_SC_ID, attemptId.getApplicationId(), Time.now());
+
     nmContext =
         new NMContext(null, null, null, null, nmStateStore, false, getConf());
     interceptor.init(new AMRMProxyApplicationContextImpl(nmContext, getConf(),
@@ -175,6 +178,8 @@ public class TestFederationInterceptor extends BaseAMRMProxyTest {
     conf.setLong(YarnConfiguration.FEDERATION_AMRMPROXY_SUBCLUSTER_TIMEOUT,
         500);
 
+    // Register UAM Retry Interval 1ms
+    conf.setLong(YarnConfiguration.FEDERATION_AMRMPROXY_REGISTER_UAM_RETRY_INTERVAL, 1);
     return conf;
   }
 
@@ -195,10 +200,8 @@ public class TestFederationInterceptor extends BaseAMRMProxyTest {
   private List<Container> getContainersAndAssert(int numberOfResourceRequests,
       int numberOfAllocationExcepted) throws Exception {
     AllocateRequest allocateRequest = Records.newRecord(AllocateRequest.class);
-    List<Container> containers =
-        new ArrayList<Container>(numberOfResourceRequests);
-    List<ResourceRequest> askList =
-        new ArrayList<ResourceRequest>(numberOfResourceRequests);
+    List<Container> containers = new ArrayList<>(numberOfResourceRequests);
+    List<ResourceRequest> askList = new ArrayList<>(numberOfResourceRequests);
     for (int id = 0; id < numberOfResourceRequests; id++) {
       askList.add(createResourceRequest("test-node-" + Integer.toString(id),
           6000, 2, id % 5, 1));
@@ -269,8 +272,8 @@ public class TestFederationInterceptor extends BaseAMRMProxyTest {
     List<ContainerId> newlyFinished = getCompletedContainerIds(
         allocateResponse.getCompletedContainersStatuses());
     containersForReleasedContainerIds.addAll(newlyFinished);
-    LOG.info("Number of containers received in the original request: "
-        + Integer.toString(newlyFinished.size()));
+    LOG.info("Number of containers received in the original request: {}",
+        newlyFinished.size());
 
     // Send max 10 heart beats to receive all the containers. If not, we will
     // fail the test
@@ -290,10 +293,9 @@ public class TestFederationInterceptor extends BaseAMRMProxyTest {
       newlyFinished = getCompletedContainerIds(
           allocateResponse.getCompletedContainersStatuses());
       containersForReleasedContainerIds.addAll(newlyFinished);
-      LOG.info("Number of containers received in this request: "
-          + Integer.toString(newlyFinished.size()));
-      LOG.info("Total number of containers received: "
-          + Integer.toString(containersForReleasedContainerIds.size()));
+      LOG.info("Number of containers received in this request: {}.", newlyFinished.size());
+      LOG.info("Total number of containers received: {}.",
+          containersForReleasedContainerIds.size());
       Thread.sleep(10);
     }
 
@@ -431,7 +433,7 @@ public class TestFederationInterceptor extends BaseAMRMProxyTest {
         FinishApplicationMasterResponse finishResponse =
             interceptor.finishApplicationMaster(finishReq);
         Assert.assertNotNull(finishResponse);
-        Assert.assertEquals(true, finishResponse.getIsUnregistered());
+        Assert.assertTrue(finishResponse.getIsUnregistered());
         return null;
       }
     });
@@ -624,7 +626,7 @@ public class TestFederationInterceptor extends BaseAMRMProxyTest {
         FinishApplicationMasterResponse finishResponse =
             interceptor.finishApplicationMaster(finishReq);
         Assert.assertNotNull(finishResponse);
-        Assert.assertEquals(true, finishResponse.getIsUnregistered());
+        Assert.assertTrue(finishResponse.getIsUnregistered());
 
         // After the application succeeds, the registry/NMSS entry should be
         // cleaned up
@@ -805,7 +807,7 @@ public class TestFederationInterceptor extends BaseAMRMProxyTest {
         Assert.assertEquals(0, interceptor.getTimedOutSCs(true).size());
 
         // Generate a duplicate heartbeat from AM, so that it won't really
-        // trigger an heartbeat to all SC
+        // trigger a heartbeat to all SC
         AllocateRequest allocateRequest =
             Records.newRecord(AllocateRequest.class);
         // Set to lastResponseId - 1 so that it will be considered a duplicate
@@ -904,7 +906,7 @@ public class TestFederationInterceptor extends BaseAMRMProxyTest {
         FinishApplicationMasterResponse finishResponse =
             interceptor.finishApplicationMaster(finishReq);
         Assert.assertNotNull(finishResponse);
-        Assert.assertEquals(true, finishResponse.getIsUnregistered());
+        Assert.assertTrue(finishResponse.getIsUnregistered());
 
         // After the application succeeds, the registry entry should be deleted
         if (interceptor.getRegistryClient() != null) {
@@ -1431,5 +1433,54 @@ public class TestFederationInterceptor extends BaseAMRMProxyTest {
         interceptor.finishApplicationMaster(finishReq);
     Assert.assertNotNull(finishResponse);
     Assert.assertTrue(finishResponse.getIsUnregistered());
+  }
+
+  @Test
+  public void testLaunchUAMAndRegisterApplicationMasterRetry() throws Exception {
+
+    UserGroupInformation ugi = interceptor.getUGIWithToken(interceptor.getAttemptId());
+    interceptor.setRetryCount(2);
+
+    ugi.doAs((PrivilegedExceptionAction<Object>) () -> {
+      // Register the application
+      RegisterApplicationMasterRequest registerReq =
+          Records.newRecord(RegisterApplicationMasterRequest.class);
+      registerReq.setHost(Integer.toString(testAppId));
+      registerReq.setRpcPort(0);
+      registerReq.setTrackingUrl("");
+
+      RegisterApplicationMasterResponse registerResponse =
+          interceptor.registerApplicationMaster(registerReq);
+      Assert.assertNotNull(registerResponse);
+      lastResponseId = 0;
+
+      Assert.assertEquals(0, interceptor.getUnmanagedAMPoolSize());
+
+      // Allocate the first batch of containers, with sc1 active
+      registerSubCluster(SubClusterId.newInstance("SC-1"));
+
+      int numberOfContainers = 3;
+      List<Container> containers = getContainersAndAssert(numberOfContainers, numberOfContainers);
+      Assert.assertEquals(1, interceptor.getUnmanagedAMPoolSize());
+
+      // Release all containers
+      releaseContainersAndAssert(containers);
+
+      // Finish the application
+      FinishApplicationMasterRequest finishReq =
+          Records.newRecord(FinishApplicationMasterRequest.class);
+      finishReq.setDiagnostics("");
+      finishReq.setTrackingUrl("");
+      finishReq.setFinalApplicationStatus(FinalApplicationStatus.SUCCEEDED);
+
+      FinishApplicationMasterResponse finishResponse =
+          interceptor.finishApplicationMaster(finishReq);
+      Assert.assertNotNull(finishResponse);
+      Assert.assertTrue(finishResponse.getIsUnregistered());
+
+      return null;
+    });
+
+    Assert.assertEquals(0, interceptor.getRetryCount());
   }
 }

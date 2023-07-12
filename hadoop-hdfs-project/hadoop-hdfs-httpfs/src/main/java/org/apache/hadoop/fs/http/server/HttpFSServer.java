@@ -526,6 +526,14 @@ public class HttpFSServer {
       response = Response.ok(js).type(MediaType.APPLICATION_JSON).build();
       break;
     }
+    case GETECPOLICIES: {
+      FSOperations.FSGetErasureCodingPolicies command =
+          new FSOperations.FSGetErasureCodingPolicies();
+      String js = fsExecute(user, command);
+      AUDIT_LOG.info("[{}]", path);
+      response = Response.ok(js).type(MediaType.APPLICATION_JSON).build();
+      break;
+    }
     case GET_BLOCK_LOCATIONS: {
       long offset = 0;
       long len = Long.MAX_VALUE;
@@ -544,6 +552,20 @@ public class HttpFSServer {
       Map locations = fsExecute(user, command);
       final String json = JsonUtil.toJsonString("LocatedBlocks", locations);
       response = Response.ok(json).type(MediaType.APPLICATION_JSON).build();
+      break;
+    }
+    case GETFILELINKSTATUS: {
+      FSOperations.FSFileLinkStatus command =
+          new FSOperations.FSFileLinkStatus(path);
+      @SuppressWarnings("rawtypes") Map js = fsExecute(user, command);
+      AUDIT_LOG.info("[{}]", path);
+      response = Response.ok(js).type(MediaType.APPLICATION_JSON).build();
+      break;
+    }
+    case GETSTATUS: {
+      FSOperations.FSStatus command = new FSOperations.FSStatus(path);
+      @SuppressWarnings("rawtypes") Map js = fsExecute(user, command);
+      response = Response.ok(js).type(MediaType.APPLICATION_JSON).build();
       break;
     }
     default: {

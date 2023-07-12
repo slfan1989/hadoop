@@ -34,6 +34,8 @@ import org.apache.hadoop.util.Time;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.api.records.ReservationId;
 import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
+import org.apache.hadoop.yarn.api.records.Priority;
+import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.security.client.RMDelegationTokenIdentifier;
 import org.apache.hadoop.yarn.server.federation.store.FederationStateStore;
@@ -406,7 +408,7 @@ public abstract class FederationStateStoreBaseTest {
     ApplicationId appId1 = ApplicationId.newInstance(1, 1);
     SubClusterId subClusterId1 = SubClusterId.newInstance("SC1");
     ApplicationHomeSubCluster ahsc1 =
-        ApplicationHomeSubCluster.newInstance(appId1, subClusterId1);
+        ApplicationHomeSubCluster.newInstance(appId1,  subClusterId1);
 
     ApplicationId appId2 = ApplicationId.newInstance(1, 2);
     SubClusterId subClusterId2 = SubClusterId.newInstance("SC2");
@@ -470,6 +472,7 @@ public abstract class FederationStateStoreBaseTest {
     Assert.assertEquals(10, items.size());
 
     for (ApplicationHomeSubCluster item : items) {
+      appHomeSubClusters.contains(item);
       Assert.assertTrue(appHomeSubClusters.contains(item));
     }
   }
@@ -1084,5 +1087,29 @@ public abstract class FederationStateStoreBaseTest {
   @Test
   public void testCheckVersion() throws Exception {
     stateStore.checkVersion();
+  }
+
+  @Test
+  public void testGetApplicationHomeSubClusterWithContext() throws Exception {
+    FederationStateStore federationStateStore = this.getStateStore();
+
+    ApplicationId appId = ApplicationId.newInstance(1, 3);
+    SubClusterId subClusterId = SubClusterId.newInstance("SC");
+    ApplicationSubmissionContext context =
+        ApplicationSubmissionContext.newInstance(appId, "test", "default",
+        Priority.newInstance(0), null, true, true,
+        2, Resource.newInstance(10, 2), "test");
+    addApplicationHomeSC(appId, subClusterId, context);
+
+    GetApplicationHomeSubClusterRequest getRequest =
+         GetApplicationHomeSubClusterRequest.newInstance(appId, true);
+    GetApplicationHomeSubClusterResponse result =
+         federationStateStore.getApplicationHomeSubCluster(getRequest);
+
+    ApplicationHomeSubCluster applicationHomeSubCluster = result.getApplicationHomeSubCluster();
+
+    assertEquals(appId, applicationHomeSubCluster.getApplicationId());
+    assertEquals(subClusterId, applicationHomeSubCluster.getHomeSubCluster());
+    assertEquals(context, applicationHomeSubCluster.getApplicationSubmissionContext());
   }
 }

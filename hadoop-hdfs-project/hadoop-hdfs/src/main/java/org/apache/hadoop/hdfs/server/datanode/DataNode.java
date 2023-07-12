@@ -3558,7 +3558,7 @@ public class DataNode extends ReconfigurableBase
 
   @Override // DataNodeMXBean
   public String getHttpPort(){
-    return this.getConf().get("dfs.datanode.info.port");
+    return String.valueOf(infoPort);
   }
 
   @Override // DataNodeMXBean
@@ -4238,10 +4238,6 @@ public class DataNode extends ReconfigurableBase
 
   public DataSetLockManager getDataSetLockManager() {
     return dataSetLockManager;
-  }
-
-  boolean isSlownodeByNameserviceId(String nsId) {
-    return blockPoolManager.isSlownodeByNameserviceId(nsId);
   }
 
   boolean isSlownodeByBlockPoolId(String bpId) {

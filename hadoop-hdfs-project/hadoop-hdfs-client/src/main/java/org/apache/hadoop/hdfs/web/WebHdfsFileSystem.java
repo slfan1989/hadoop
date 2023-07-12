@@ -72,6 +72,7 @@ import org.apache.hadoop.fs.FileEncryptionInfo;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FsServerDefaults;
+import org.apache.hadoop.fs.FsStatus;
 import org.apache.hadoop.fs.GlobalStorageStatistics;
 import org.apache.hadoop.fs.GlobalStorageStatistics.StorageStatisticsProvider;
 import org.apache.hadoop.fs.MultipartUploaderBuilder;
@@ -99,6 +100,7 @@ import org.apache.hadoop.hdfs.client.HdfsClientConfigKeys;
 import org.apache.hadoop.hdfs.protocol.BlockStoragePolicy;
 import org.apache.hadoop.hdfs.protocol.DirectoryListing;
 import org.apache.hadoop.hdfs.protocol.ErasureCodingPolicy;
+import org.apache.hadoop.hdfs.protocol.ErasureCodingPolicyInfo;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.protocol.HdfsFileStatus;
 import org.apache.hadoop.hdfs.protocol.SnapshotDiffReport;
@@ -2176,6 +2178,32 @@ public class WebHdfsFileSystem extends FileSystem
       throw new FileNotFoundException("File does not exist: " + f);
     }
     return status.makeQualified(getUri(), f);
+  }
+
+  @Override
+  public FsStatus getStatus(Path path) throws IOException {
+    statistics.incrementReadOps(1);
+    storageStatistics.incrementOpCounter(OpType.GET_STATUS);
+    final GetOpParam.Op op = GetOpParam.Op.GETSTATUS;
+    return new FsPathResponseRunner<FsStatus>(op, path) {
+      @Override
+      FsStatus decodeResponse(Map<?, ?> json) {
+        return JsonUtilClient.toFsStatus(json);
+      }
+    }.run();
+  }
+
+  public Collection<ErasureCodingPolicyInfo> getAllErasureCodingPolicies()
+      throws IOException {
+    statistics.incrementReadOps(1);
+    storageStatistics.incrementOpCounter(OpType.GET_EC_POLICIES);
+    final GetOpParam.Op op = GetOpParam.Op.GETECPOLICIES;
+    return new FsPathResponseRunner<Collection<ErasureCodingPolicyInfo>>(op, null) {
+      @Override
+      Collection<ErasureCodingPolicyInfo> decodeResponse(Map<?, ?> json) {
+        return JsonUtilClient.getAllErasureCodingPolicies(json);
+      }
+    }.run();
   }
 
   @VisibleForTesting

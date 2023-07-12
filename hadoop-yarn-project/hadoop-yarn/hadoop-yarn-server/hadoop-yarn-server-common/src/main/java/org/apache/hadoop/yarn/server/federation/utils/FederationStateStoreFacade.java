@@ -267,6 +267,26 @@ public final class FederationStateStoreFacade {
   }
 
   /**
+   * Updates the cache with the central {@link FederationStateStore} and returns
+   * the {@link SubClusterInfo} of all active sub cluster(s).
+   *
+   * @param filterInactiveSubClusters whether to filter out inactive
+   *          sub-clusters
+   * @param flushCache flag to indicate if the cache should be flushed or not
+   * @return the sub cluster information
+   * @throws YarnException if the call to the state store is unsuccessful
+   */
+  public Map<SubClusterId, SubClusterInfo> getSubClusters(
+      final boolean filterInactiveSubClusters, final boolean flushCache)
+      throws YarnException {
+    if (flushCache && federationCache.isCachingEnabled()) {
+      LOG.info("Flushing subClusters from cache and rehydrating from store.");
+      federationCache.removeSubCluster(flushCache);
+    }
+    return getSubClusters(filterInactiveSubClusters);
+  }
+
+  /**
    * Returns the {@link SubClusterPolicyConfiguration} for the specified queue.
    *
    * @param queue the queue whose policy is required
@@ -786,7 +806,7 @@ public final class FederationStateStoreFacade {
         return true;
       }
     } catch (YarnException e) {
-      LOG.warn("get homeSubCluster by applicationId = {} error.", applicationId, e);
+      LOG.debug("get homeSubCluster by applicationId = {} error.", applicationId, e);
     }
     return false;
   }
@@ -873,7 +893,7 @@ public final class FederationStateStoreFacade {
         return true;
       }
     } catch (YarnException e) {
-      LOG.warn("get homeSubCluster by reservationId = {} error.", reservationId, e);
+      LOG.debug("get homeSubCluster by reservationId = {} error.", reservationId, e);
     }
     return false;
   }
@@ -988,6 +1008,26 @@ public final class FederationStateStoreFacade {
       return null;
     }
   }
+
+  /**
+   * Get ApplicationSubmissionContext according to ApplicationId.
+   * We don't throw exceptions. If the application cannot be found, we return null.
+   *
+   * @param appId ApplicationId
+   * @return ApplicationSubmissionContext of ApplicationId
+   */
+  public ApplicationSubmissionContext getApplicationSubmissionContext(ApplicationId appId) {
+    try {
+      GetApplicationHomeSubClusterResponse response = stateStore.getApplicationHomeSubCluster(
+          GetApplicationHomeSubClusterRequest.newInstance(appId));
+      ApplicationHomeSubCluster appHomeSubCluster = response.getApplicationHomeSubCluster();
+      return appHomeSubCluster.getApplicationSubmissionContext();
+    } catch (Exception e) {
+      LOG.error("getApplicationSubmissionContext error, applicationId = {}.", appId, e);
+      return null;
+    }
+  }
+
 
   @VisibleForTesting
   public FederationCache getFederationCache() {

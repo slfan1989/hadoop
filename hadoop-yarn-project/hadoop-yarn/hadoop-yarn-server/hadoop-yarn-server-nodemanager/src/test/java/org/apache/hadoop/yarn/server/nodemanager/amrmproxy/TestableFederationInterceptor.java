@@ -29,6 +29,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
+import org.apache.hadoop.yarn.api.records.ApplicationSubmissionContext;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnException;
 import org.apache.hadoop.yarn.security.AMRMTokenIdentifier;
@@ -54,6 +55,7 @@ public class TestableFederationInterceptor extends FederationInterceptor {
   private MockResourceManagerFacade mockRm;
 
   private boolean isClientRPC = false;
+  private int retryCount = 0;
 
   public TestableFederationInterceptor() {
   }
@@ -214,10 +216,10 @@ public class TestableFederationInterceptor extends FederationInterceptor {
     public UnmanagedApplicationManager createUAM(Configuration conf,
         ApplicationId appId, String queueName, String submitter,
         String appNameSuffix, boolean keepContainersAcrossApplicationAttempts,
-        String rmId) {
+        String rmId, ApplicationSubmissionContext originalAppSubmissionContext) {
       return new TestableUnmanagedApplicationManager(conf, appId, queueName,
           submitter, appNameSuffix, keepContainersAcrossApplicationAttempts,
-          rmId);
+          rmId, originalAppSubmissionContext);
     }
   }
 
@@ -231,9 +233,9 @@ public class TestableFederationInterceptor extends FederationInterceptor {
     public TestableUnmanagedApplicationManager(Configuration conf,
         ApplicationId appId, String queueName, String submitter,
         String appNameSuffix, boolean keepContainersAcrossApplicationAttempts,
-        String rmName) {
+        String rmName, ApplicationSubmissionContext originalAppSubmissionContext) {
       super(conf, appId, queueName, submitter, appNameSuffix,
-          keepContainersAcrossApplicationAttempts, rmName);
+          keepContainersAcrossApplicationAttempts, rmName, originalAppSubmissionContext);
     }
 
     @Override
@@ -255,6 +257,24 @@ public class TestableFederationInterceptor extends FederationInterceptor {
       return createSecondaryRMProxy(protocol, config,
           YarnConfiguration.getClusterId(config));
     }
+  }
+
+  @Override
+  protected TokenAndRegisterResponse launchUAMAndRegisterApplicationMaster(YarnConfiguration config,
+      String subClusterId, ApplicationId applicationId) throws IOException, YarnException {
+    if (retryCount > 0) {
+      retryCount--;
+      throw new YarnException("launchUAMAndRegisterApplicationMaster will retry");
+    }
+    return super.launchUAMAndRegisterApplicationMaster(config, subClusterId, applicationId);
+  }
+
+  public void setRetryCount(int retryCount) {
+    this.retryCount = retryCount;
+  }
+
+  public int getRetryCount() {
+    return retryCount;
   }
 
   /**
