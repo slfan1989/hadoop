@@ -1122,6 +1122,11 @@ public class SQLFederationStateStore implements FederationStateStore {
     storeVersion(fedVersion, versionComment);
   }
 
+  @Override
+  public void deletePolicyStore() throws Exception {
+
+  }
+
   /**
    * Store the Federation Version in the database.
    *

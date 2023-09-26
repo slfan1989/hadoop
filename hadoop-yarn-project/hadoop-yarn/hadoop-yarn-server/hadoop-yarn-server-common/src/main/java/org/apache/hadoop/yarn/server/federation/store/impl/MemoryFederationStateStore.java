@@ -420,6 +420,11 @@ public class MemoryFederationStateStore implements FederationStateStore {
   }
 
   @Override
+  public void deletePolicyStore() throws Exception {
+
+  }
+
+  @Override
   public AddReservationHomeSubClusterResponse addReservationHomeSubCluster(
       AddReservationHomeSubClusterRequest request) throws YarnException {
     FederationReservationHomeSubClusterStoreInputValidator.validate(request);

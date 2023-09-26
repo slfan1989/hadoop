@@ -101,4 +101,11 @@ public interface FederationStateStore extends
          ", but loading version " + loadedVersion);
     }
   }
+
+  /**
+   * We will clear the data in policyStore through the deletePolicyStore method.
+   *
+   * @throws Exception an exception occurred in delete policy store.
+   */
+  void deletePolicyStore() throws Exception;
 }

@@ -725,6 +725,11 @@ public class ZookeeperFederationStateStore implements FederationStateStore {
     put(versionNode, data, isUpdate);
   }
 
+  @Override
+  public void deletePolicyStore() throws Exception {
+
+  }
+
   /**
    * Get the subcluster for an application.
    *
