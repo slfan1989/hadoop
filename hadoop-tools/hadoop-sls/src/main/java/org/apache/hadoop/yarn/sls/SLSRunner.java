@@ -187,6 +187,12 @@ public class SLSRunner extends Configured implements Tool {
     }
   }
 
+  public void setSimulationParams(TraceType inputType, String[] inTraces,
+      String nodes, String metricsOutputDir, Set<String> trackApps,
+      boolean printSimulation, String subCluster) {
+    setSimulationParams(inputType, inTraces, nodes, metricsOutputDir, trackApps, printSimulation, subCluster);
+  }
+
   public void start() throws IOException, ClassNotFoundException, YarnException,
       InterruptedException {
     enableDNSCaching(getConf());
