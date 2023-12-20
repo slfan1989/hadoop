@@ -144,6 +144,7 @@ public abstract class AbstractNodeDescriptorsProvider<T>
    * <li>The script file exists</li>
    * </ol>
    *
+   * @param scriptPath
    * @throws IOException
    */
   protected void verifyConfiguredScript(String scriptPath)
