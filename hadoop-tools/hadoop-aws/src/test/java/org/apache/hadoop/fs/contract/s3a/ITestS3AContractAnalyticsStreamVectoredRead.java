@@ -35,10 +35,6 @@ import static org.apache.hadoop.fs.s3a.S3ATestUtils.skipForAnyEncryptionExceptSS
  */
 public class ITestS3AContractAnalyticsStreamVectoredRead extends AbstractContractVectoredReadTest {
 
-  public ITestS3AContractAnalyticsStreamVectoredRead(String bufferType) {
-    super(bufferType);
-  }
-
   /**
    * Create a configuration.
    * @return a configuration
