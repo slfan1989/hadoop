@@ -992,9 +992,9 @@ public class TestCapacitySchedulerNewQueueAutoCreation
         "a2-auto", "root.a.a1-auto");
 
     // Wait a2 created successfully.
-    GenericTestUtils.waitFor(()-> cs.getQueue(
-        "root.a.a1-auto.a2-auto") != null,
-        100, 2000);
+    GenericTestUtils.waitFor(() -> cs.getQueue(
+         "root.a.a1-auto.a2-auto") != null,
+         100, 2000);
 
     AbstractCSQueue a1 = (AbstractCSQueue) cs.getQueue(
         "root.a.a1-auto");

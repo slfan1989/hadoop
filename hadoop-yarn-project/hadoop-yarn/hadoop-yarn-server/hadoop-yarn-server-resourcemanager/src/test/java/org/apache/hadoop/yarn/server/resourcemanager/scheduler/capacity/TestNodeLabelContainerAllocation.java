@@ -1707,14 +1707,13 @@ public class TestNodeLabelContainerAllocation {
                 + nodeIdStr + " ( Partition : [x]"));
     Assert.assertEquals(0, cs.getSchedulerNode(nm1.getNodeId())
         .getNumContainers());
-    
+
     rm1.close();
   }
 
   @Test(timeout=60000)
-  public void
-      testQueueMaxCapacitiesWillNotBeHonoredWhenNotRespectingExclusivity()
-          throws Exception {
+  public void testQueueMaxCapacitiesWillNotBeHonoredWhenNotRespectingExclusivity()
+      throws Exception {
     /**
      * Test case: have a following queue structure:
      * 
